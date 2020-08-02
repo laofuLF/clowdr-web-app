@@ -6,7 +6,7 @@ import {PageHeader} from "antd";
 class Landing extends Component {
     render() {
         return <div>
-            <h2>ICSE 2020 LIVE @ CLOWDR</h2>
+            <p style={{fontSize: 30}}>ICSE 2020 LIVE @ CLOWDR</p>
             <p><strong>Welcome to Virtual ICSE 2020!</strong> We are using two main tools to connect everyone:
             </p>
             <div>

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@ant-design/dark-theme": "^2.0.2",
     "@material-ui/core": "^4.9.1",
     "@material-ui/icons": "^4.9.1",
     "@primer/octicons-react": "^9.4.0",
@@ -43,6 +44,7 @@
     "react-player": "^2.2.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "3.4.1",
+    "styled-components": "^5.1.1",
     "twilio": "^3.39.3",
     "twilio-chat": "^3.3.7",
     "twilio-video": "^2.4.0",
@@ -89,6 +91,7 @@
     "express-pino-logger": "^4.0.0",
     "node-env-run": "^3.0.2",
     "nodemon": "^1.19.4",
-    "npm-run-all": "^4.1.5"
+    "npm-run-all": "^4.1.5",
+    "prop-types": "^15.7.2"
   }
 }
