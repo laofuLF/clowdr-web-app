@@ -53,11 +53,9 @@ import {withRouter} from "react-router";
 import BottomChat from "./components/SocialTab/BottomChat";
 import ProgramItem from "./components/ProgramItem";
 
-import { useDarkMode } from "./components/Theme/useDarkMode";
-import Toggle from './components/Theme/Toggler';
-import {lightTheme, darkTheme} from "./components/Theme/Theme";
-import {GlobalStyles} from "./components/Theme/Globalstyle";
-import {ThemeProvider} from "styled-components";
+import Toggle from './theme/Toggler';
+import darkVars from './theme/dark.json';
+import lightVars from './theme/light.json';
 
 
 Parse.initialize(process.env.REACT_APP_PARSE_APP_ID, process.env.REACT_APP_PARSE_JS_KEY);
@@ -77,7 +75,6 @@ class App extends Component {
             socialCollapsed: false,
             chatCollapsed: false,
             theme: 'light'
-
         }
 
         if(window.location.pathname.startsWith("/fromSlack") &&!this.props.authContext.user){
@@ -86,6 +83,13 @@ class App extends Component {
     }
 
     themeToggler() {
+        const { getThemeVariables } = require('antd/dist/theme');
+        window.less.modifyVars(this.state.theme === "light" ? darkVars : lightVars).then(() => {
+            console.log('theme changed successfully')
+        }).catch(() => {
+            console.log('theme changed error')
+        })
+        console.log("theme button clicked")
         this.setState({
             theme: this.state.theme === 'light' ? 'dark' : 'light'
         })
@@ -302,56 +306,53 @@ class App extends Component {
         let isLoggedIn = this.props.authContext.user != null;
 
         return (
-            <ThemeProvider theme={this.state.theme === 'light' ? lightTheme : darkTheme}>
-                <GlobalStyles />
-                <div className="App">
-                    <div>
-                        <Layout className="site-layout">
-                            <div id="top-content">
-                                    {this.siteHeader()}
-                                {this.navBar()}
-                                {/*<Header className="action-bar">*/}
-                                {/*    /!*<Badge*!/*/}
-                                {/*    /!*    title={this.props.authContext.liveVideoRoomMembers + " user"+(this.props.authContext.liveVideoRoomMembers == 1 ? " is" : "s are")+" in video chats"}*!/*/}
-                                {/*    /!*    showZero={true} style={{backgroundColor: '#52c41a'}} count={this.props.authContext.liveVideoRoomMembers} offset={[0,-5]}>*!/*/}
-                                {/*    <Button style={lobbySiderButtonStyle} onClick={this.toggleLobbySider.bind(this)} size="small" >Breakout Rooms <RightOutlined /></Button>*/}
-                                {/*    <Button style={chatSiderButtonStyle} onClick={this.toggleChatSider.bind(this)} size="small" >Chat</Button>*/}
+            <div className="App">
+                <div>
+                    <Layout className="site-layout">
+                        <div id="top-content">
+                                {this.siteHeader()}
+                            {this.navBar()}
+                            {/*<Header className="action-bar">*/}
+                            {/*    /!*<Badge*!/*/}
+                            {/*    /!*    title={this.props.authContext.liveVideoRoomMembers + " user"+(this.props.authContext.liveVideoRoomMembers == 1 ? " is" : "s are")+" in video chats"}*!/*/}
+                            {/*    /!*    showZero={true} style={{backgroundColor: '#52c41a'}} count={this.props.authContext.liveVideoRoomMembers} offset={[0,-5]}>*!/*/}
+                            {/*    <Button style={lobbySiderButtonStyle} onClick={this.toggleLobbySider.bind(this)} size="small" >Breakout Rooms <RightOutlined /></Button>*/}
+                            {/*    <Button style={chatSiderButtonStyle} onClick={this.toggleChatSider.bind(this)} size="small" >Chat</Button>*/}
 
-                                {/*    /!*</Badge>*!/*/}
-                                {/*    </Header>*/}
-                            </div>
-                            <div className="main-area">
-                                <Layout>
-                                    {/*<div className="lobbySessionTab" style={{left: (this.state.socialCollapsed?"0px":"250px")}}><Button onClick={this.toggleLobbySider.bind(this)}  size="small">Breakout Rooms {(this.state.socialCollapsed? ">":"x")}</Button> </div>*/}
-                                    {/*<div className="lobbySessionTab" style={{right: (this.state.chatCollapsed?"0px":"250px")}}><Button onClick={this.toggleChatSider.bind(this)}  size="small">{(this.state.chatCollapsed? "<":"x")} Chat</Button> </div>*/}
+                            {/*    /!*</Badge>*!/*/}
+                            {/*    </Header>*/}
+                        </div>
+                        <div className="main-area">
+                            <Layout>
+                                {/*<div className="lobbySessionTab" style={{left: (this.state.socialCollapsed?"0px":"250px")}}><Button onClick={this.toggleLobbySider.bind(this)}  size="small">Breakout Rooms {(this.state.socialCollapsed? ">":"x")}</Button> </div>*/}
+                                {/*<div className="lobbySessionTab" style={{right: (this.state.chatCollapsed?"0px":"250px")}}><Button onClick={this.toggleChatSider.bind(this)}  size="small">{(this.state.chatCollapsed? "<":"x")} Chat</Button> </div>*/}
 
-                                    <SocialTab collapsed={this.state.socialCollapsed} setWidth={this.setLobbyWidth.bind(this)}/>
-                                    <Content style={{
-                                        overflow: 'initial',
-                                        paddingRight: this.state.chatWidth,
-                                        paddingLeft: this.state.lobbyWidth
-                                    }}>
-                                        <div style={{padding: 24, background: this.state.theme === 'light' ? 'white' : '#141414'}}>
-                                            {this.routes()}
-                                        </div>
+                                <SocialTab collapsed={this.state.socialCollapsed} setWidth={this.setLobbyWidth.bind(this)}/>
+                                <Content style={{
+                                    overflow: 'initial',
+                                    paddingRight: this.state.chatWidth,
+                                    paddingLeft: this.state.lobbyWidth
+                                }}>
+                                    <div style={{padding: 24, background: this.state.theme === 'light' ? 'white' : '#141414'}}>
+                                        {this.routes()}
+                                    </div>
 
-                                    </Content>
+                                </Content>
 
-                                    <SidebarChat collapsed={this.state.chatCollapsed} setWidth={this.setChatWidth.bind(this)}/>
-                                </Layout>
-                            </div>
-                        </Layout>
-                    </div>
-                    <BottomChat style={{
-                        right: this.state.chatWidth,
-                        left: this.state.lobbyWidth
-                    }}/>
-                    {/* <div style={{position:
-                    "sticky", bottom: 0}}>
-                        <Chat />
-                    </div> */}
+                                <SidebarChat collapsed={this.state.chatCollapsed} setWidth={this.setChatWidth.bind(this)}/>
+                            </Layout>
+                        </div>
+                    </Layout>
                 </div>
-            </ThemeProvider>
+                <BottomChat style={{
+                    right: this.state.chatWidth,
+                    left: this.state.lobbyWidth
+                }}/>
+                {/* <div style={{position:
+                "sticky", bottom: 0}}>
+                    <Chat />
+                </div> */}
+            </div>
         );
     }
 }
