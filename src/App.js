@@ -53,7 +53,7 @@ import {withRouter} from "react-router";
 import BottomChat from "./components/SocialTab/BottomChat";
 import ProgramItem from "./components/ProgramItem";
 
-import Toggle from './theme/Toggler';
+import Toggle from './theme/Toggle';
 import darkVars from './theme/dark.json';
 import lightVars from './theme/light.json';
 
@@ -74,24 +74,27 @@ class App extends Component {
             showingLanding: this.props.authContext.showingLanding,
             socialCollapsed: false,
             chatCollapsed: false,
-            theme: 'light'
+            theme: window.localStorage.getItem("theme") === "0" ? "light" : window.localStorage.getItem("theme")
         }
+        this.switchTheme();
 
         if(window.location.pathname.startsWith("/fromSlack") &&!this.props.authContext.user){
             this.state.isMagicLogin = true;
         }
     }
 
-    themeToggler() {
-        const { getThemeVariables } = require('antd/dist/theme');
-        window.less.modifyVars(this.state.theme === "light" ? darkVars : lightVars).then(() => {
+    themeToggle() {
+        this.setState({
+            theme: this.state.theme === 'light' ? 'dark' : 'light'
+        }, this.switchTheme);
+    }
+
+    switchTheme() {
+        window.localStorage.setItem("theme", this.state.theme);
+        window.less.modifyVars(this.state.theme === "light" ? lightVars : darkVars).then(() => {
             console.log('theme changed successfully')
         }).catch(() => {
             console.log('theme changed error')
-        })
-        console.log("theme button clicked")
-        this.setState({
-            theme: this.state.theme === 'light' ? 'dark' : 'light'
         })
     }
 
@@ -149,7 +152,7 @@ class App extends Component {
                 }}>
                     <Typography.Title>
                         {headerText}
-                        <Toggle theme={this.state.theme} toggleTheme={this.themeToggler.bind(this)}/>
+                        <Toggle theme={this.state.theme} toggleTheme={this.themeToggle.bind(this)}/>
                     </Typography.Title>
                     {confSwitcher}
                 </Header>
@@ -170,7 +173,6 @@ class App extends Component {
             return <div></div>
         }
         return <Header style={{padding: "0px"}}><LinkMenu/></Header>
-
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -189,7 +191,6 @@ class App extends Component {
         if (this.props.authContext.currentConference)
             this.refreshConferenceInformation();
         this.props.authContext.history = this.props.history;
-
     }
 
     refreshConferenceInformation() {
@@ -200,7 +201,6 @@ class App extends Component {
         let baseRoutes = [
             <Route key="finishAccount" exact path="/finishAccount/:userID/:conferenceID/:token" component={AccountFromToken} />,
             <Route key="forgotPassword" exact path="/resetPassword/:userID/:token" component={ForgotPassword} />
-
         ];
         if (this.isSlackAuthOnly()) {
             return <div>
@@ -219,8 +219,8 @@ class App extends Component {
 
                 <Route exact path="/admin" component={(props)=><SignIn {...props} dontBounce={true}/>} />
             </div>
-
         }
+
         return (<div>
             {baseRoutes}
             <Route exact path="/" component={Home}/>
