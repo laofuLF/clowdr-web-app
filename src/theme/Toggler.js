@@ -4,37 +4,36 @@ import styled from "styled-components"
 
 const Button = styled.button`
   
-  border: 2px solid ${({ theme }) => theme.toggleBorder};
-  border-radius: 30px;
-  cursor: pointer;
-  font-size: 0.5rem;
-  justify-content: space-between;
-  margin: 10;
-  overflow: hidden;
-  padding: 0.5rem;
-  position: relative;
-  width: 4rem;
-  height: 2rem;
-  outline: none;
-  float: right
-  }
-
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.5rem;
+    justify-content: space-between;
+    margin: 10px;
+    overflow: hidden;
+    padding: 0.5rem;
+    position: relative;
+    outline: none;
+    float: right;
+    border: 0;
+    &:focus {
+        outline: none;
+    }
 `;
 
 const Sun = styled.svg`
- height: 1rem;
- width: 1rem;
- transition: all 0.7s linear;
- align: center;
- display: block;
+    height: 1rem;
+    width: 1rem;
+    transition: all 0.7s linear;
+    align: center;
+    display: block;
 `;
 
 const Moon = styled.svg`
-  height: 1rem;
-  width: 1rem;
-  transition: all 0.7s linear;
-  align: center;
-  display: block;
+    height: 1rem;
+    width: 1rem;
+    transition: all 0.7s linear;
+    align: center;
+    display: block;
 `
 
 const Toggle = ({theme, toggleTheme }) => {

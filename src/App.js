@@ -146,14 +146,11 @@ class App extends Component {
                 return <Header className="site-layout-background" style={{
                     height: "140px",
                     clear: "both",
-                    background: this.state.theme === 'light' ? '#FAFAFA' : '#141414'
                 }}>
-                    <Typography.Title style={{
-                        color: this.state.theme === 'light' ? '#363537' : '#FAFAFA'
-                    }}>
+                    <Typography.Title>
                         {headerText}
+                        <Toggle theme={this.state.theme} toggleTheme={this.themeToggler.bind(this)}/>
                     </Typography.Title>
-                    <Toggle theme={this.state.theme} toggleTheme={this.themeToggler.bind(this)}/>
                     {confSwitcher}
                 </Header>
             } else
@@ -172,7 +169,7 @@ class App extends Component {
         if (this.isSlackAuthOnly()) {
             return <div></div>
         }
-        return <Header><LinkMenu/></Header>
+        return <Header style={{padding: "0px"}}><LinkMenu/></Header>
 
     }
 

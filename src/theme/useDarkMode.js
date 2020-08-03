@@ -10,7 +10,6 @@ export const useDarkMode = () => {
 
     const themeToggler = () => {
         theme === 'light' ? setMode('dark') : setMode('light')
-        console.log("button clicked")
     };
 
     useEffect(() => {
