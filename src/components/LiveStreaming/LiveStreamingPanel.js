@@ -3,8 +3,10 @@ import {Button, Card, Spin} from 'antd';
 import moment from 'moment';
 import ReactPlayer from "react-player";
 import {videoURLFromData} from './utils';
-import { CollectionsOutlined } from "@material-ui/icons";
-import { NavLink } from "react-router-dom";
+import zoomImg from "./zoom.png";
+import Parse from "parse";
+import ZoomPanel from "./ZoomPanel";
+import RoomProgramSummary from "./RoomProgramSummary";
 var timezone = require('moment-timezone');
 
 class LiveStreamingPanel extends Component {
@@ -18,7 +20,7 @@ class LiveStreamingPanel extends Component {
             china: false
         };
     }
-    
+
 
     joinChatChannels() {
         var items = [];
@@ -50,6 +52,7 @@ class LiveStreamingPanel extends Component {
         var id = this.props.video.get("id1");
         var pwd = this.props.video.get("pwd1");
         this.props.auth.helpers.getPresences(this);
+
 
         var inChina = false;
         if (country && (country.toLowerCase().includes("china") || country.toLowerCase().trim() == "cn")) {
@@ -111,34 +114,8 @@ class LiveStreamingPanel extends Component {
         let sessionData = "";
         let roomName = this.props.video.get('name');
         if (this.state.expanded) {
-            let lengths = this.props.mysessions.map(s => (s.get("items") ? s.get("items").length : 0));
-            let nrows = Math.max(...lengths);
-            var rows = [];
-            for (var r = 0; r < nrows; r++) {
-                var row = [];
-                for (var s = 0; s < this.props.mysessions.length; s++) {
-                    let value = "";
-                    let sid = "";
-                    if (this.props.mysessions[s].get("items") &&  r < this.props.mysessions[s].get("items").length) {
-                        value =  this.props.mysessions[s].get("items")[r].get("title");
-                        sid = this.props.mysessions[s].get("items")[r].get("chatSID");
-                    }
-                    row = [...row, [value, sid]]; // pairs of titles and sids
-                }
-                rows = [...rows, row];
-            }
-            // console.log(JSON.stringify(rows));
-        
-            sessionData = <table><tbody>
-                <tr>{this.props.mysessions.map(s => {
-                            return <td key={s.id}><b>{moment(s.get("startTime")).tz(timezone.tz.guess()).calendar() + ": " + s.get("title")}</b></td>
-                        })}</tr>
-                        {rows.map(row => {
-                            return <tr key={row[0][0]}>{row.map(pair => {
-                                return <td key={pair[0]}>{pair[1] ? <div className="chatLink" onClick={this.joinChatChannel.bind(this, pair[1])}>{pair[0]}</div> : pair[0]}</td>
-                            })}</tr>
-                        })}
-                </tbody></table>
+
+            sessionData = <RoomProgramSummary ProgramRoom={this.props.video} />
             navigation = <Button onClick={this.props.onExpand.bind(this)}>Go Back</Button>
         }
         else {
@@ -146,9 +123,12 @@ class LiveStreamingPanel extends Component {
             roomName = this.props.video.get('name').length < 10 ? this.props.video.get('name'): 
                         <span title={this.props.video.get('name')}>{this.props.video.get('name').substring(0,10) + "..."}</span>;
 
-            sessionData = this.props.mysessions.map(s => {
+            sessionData = this.props.mysessions.slice(0,5).map(s => {
                             return <div key={s.id}><b>{moment(s.get("startTime")).tz(timezone.tz.guess()).calendar() + ": " + s.get("title")}</b></div>
                         })
+            if(this.props.mysessions.length > 5){
+                sessionData.push(<div key="more">... Plus {this.props.mysessions.length - 5} more sessions</div>)
+            }
 
         }
         let viewers = 0;
@@ -162,10 +142,20 @@ class LiveStreamingPanel extends Component {
         }
 
         if (!this.state.video_url)
-            return <Spin />
+            return <Spin/>
 
         let player = "";
-        if (!this.state.china) {
+        let wrapperClassName = "player-wrapper";
+        if (this.props.video.get("src1").includes("Zoom")) {
+            wrapperClassName = "";
+            if (this.props.expanded) {
+                player = <ZoomPanel room={this.props.video} auth={this.props.auth}/>
+            } else {
+                player = <img alt="poster" style={{width: 311, height: 175}} src={zoomImg}/>
+            }
+
+        }
+        else if (!this.state.china) {
             player = <ReactPlayer playing={this.props.playing} playsinline controls={true} muted={true} volume={1}
                         width="100%" height="100%" style={{position:"absolute", top:0, left:0}} url={this.state.video_url}/>
         }
@@ -181,7 +171,7 @@ class LiveStreamingPanel extends Component {
         </div>
         return <Card
             hoverable={!this.state.expanded}
-                     cover={<div className="player-wrapper" >
+                     cover={<div className={wrapperClassName} >
                          {player}
 
                      </div>

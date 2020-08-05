@@ -137,7 +137,6 @@ class Registrations extends React.Component {
                 conference: this.currentConference.id,
                 registrations: [record.id]
             });
-            this.refreshList();
             this.setState({sending: false})
         }catch(err){
             console.log(err);
@@ -222,7 +221,7 @@ class Registrations extends React.Component {
                     {
                         return <span>{moment(record.get("invitationSentDate")).calendar()} <Button onClick={this.sendInvitation.bind(this, record)}>Re-send</Button></span>
                     }
-                    return <span><Button onClick={this.sendInvitation.bind(this, record)}>Send</Button></span>},
+                    return <span><Button loading={this.state.sending} onClick={this.sendInvitation.bind(this, record)}>Send</Button></span>},
                 key: 'invitationSent',
             }
         ];
@@ -238,9 +237,9 @@ class Registrations extends React.Component {
                     <tbody>
                         <tr>
                             <td><Upload accept=".txt, .csv" onChange={this.onChange.bind(this)} beforeUpload={this.beforeUpload.bind(this)}>
-                                <Button>
+                                <Tooltip title="Upload a CSV file with a header and mandatory fields: email,name and optional fields affiliation,country. Name can be either a single field 'name' or 'first' and 'last'"><Button>
                                     <UploadOutlined /> Upload file
-                                </Button>
+                                </Button></Tooltip>
                             </Upload></td>
 
                             <td>

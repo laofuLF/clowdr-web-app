@@ -3,4 +3,6 @@ require("./presence")
 require("./program")
 require("./chat")
 require("./social")
-require("./initialize")
+require("./admin")
+require("./zoom")
+

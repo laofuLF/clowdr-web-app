@@ -1,13 +1,18 @@
+// @Jon/@Crista    Is this file correctly named, or should it be called withClowdrAppState
+
 import React from 'react';
 
 import AuthUserContext from './context';
 import Parse from "parse";
 import {notification, Spin} from "antd";
 import ChatClient from "../../classes/ChatClient"
+import ProgramCache from "./ProgramCache";
 
 let UserProfile = Parse.Object.extend("UserProfile");
 
 const withAuthentication = Component => {
+    // @Jon/@Crista    Is this file correctly named, or should it be called WithClowdrAppState
+    // (and maybe ClowdrAppState can be globally renamed just ClowdrState...?)
     class WithAuthentication extends React.Component {
 
         constructor(props) {
@@ -24,15 +29,18 @@ const withAuthentication = Component => {
             this.presenceWatchers = [];
             this.presences = {};
             this.newPresences = [];
+            this.userProfileSubscribers = {};
 
-            var parseLive = new Parse.LiveQueryClient({
+            this.parseLive = new Parse.LiveQueryClient({
                 applicationId: process.env.REACT_APP_PARSE_APP_ID,
                 serverURL: process.env.REACT_APP_PARSE_DOMAIN,
                 javascriptKey: process.env.REACT_APP_PARSE_JS_KEY,
             });
-            parseLive.open();
+            this.parseLive.open();
 
             let exports ={
+                getBreakoutRoom: this.getBreakoutRoom.bind(this),
+                cancelBreakoutRoomSubscription: this.cancelBreakoutRoomSubscription.bind(this),
                 unwrappedProfiles: this.unwrappedProfiles,
                 setExpandedProgramRoom: this.setExpandedProgramRoom.bind(this),
                 presences: this.presences,
@@ -48,7 +56,11 @@ const withAuthentication = Component => {
                 ifPermission: this.ifPermission.bind(this),
                 getUserRecord: this.getUserRecord.bind(this),
                 getPresences: this.getPresences.bind(this),
-                cancelPresenceSubscription: this.cancelPresenceSubscription.bind(this)
+                cancelPresenceSubscription: this.cancelPresenceSubscription.bind(this),
+                unmountProfileDisplay: this.unmountProfileDisplay.bind(this),
+                updateMyPresence: this.updateMyPresence.bind(this),
+                userHasWritePermission: this.userHasWritePermission.bind(this)
+
             }
             this.state = {
                 user: null,
@@ -62,22 +74,27 @@ const withAuthentication = Component => {
                 setSocialSpace: this.setSocialSpace.bind(this),
                 getConferenceBySlackName: this.getConferenceBySlackName.bind(this),
                 setActiveRoom: this.setActiveRoom.bind(this),
-                teamID: null,
                 currentConference: null,
                 activeRoom: null,
                 helpers: exports,
                 chatClient: new ChatClient(this.setState.bind(this)),
-                parseLive: parseLive,
+                parseLive: this.parseLive,
                 presences: {},
                 // video: {
                 videoRoomsLoaded: false,
-                    liveVideoRoomMembers: 0,
-                    activePublicVideoRooms: [],
-                    activePrivateVideoRooms: [],
+                liveVideoRoomMembers: 0,
+                activePublicVideoRooms: [],
+                activePrivateVideoRooms: [],
                 // },
-
             };
             this.fetchingUsers = false;
+        }
+
+        async updateMyPresence(presence){
+            this.presences[this.state.userProfile.id] = presence;
+            for(let presenceWatcher of this.presenceWatchers){
+                presenceWatcher.setState({presences: this.presences});
+            }
         }
 
         async createOrOpenDM(profileOfUserToDM){
@@ -132,7 +149,7 @@ const withAuthentication = Component => {
                 this.usersPromise = new Promise(async (resolve, reject) => {
                     let parseUserQ = new Parse.Query(UserProfile)
                     parseUserQ.equalTo("conference", this.state.currentConference);
-                    parseUserQ.limit(1000);
+                    parseUserQ.limit(5000);
                     parseUserQ.withCount();
                     let nRetrieved = 0;
                     let {count, results} = await parseUserQ.find();
@@ -143,7 +160,7 @@ const withAuthentication = Component => {
                         let parseUserQ = new Parse.Query(UserProfile)
                         parseUserQ.skip(nRetrieved);
                         parseUserQ.equalTo("conference", this.state.currentConference);
-                        parseUserQ.limit(1000);
+                        parseUserQ.limit(5000);
                         let results = await parseUserQ.find();
                         // results = dat.results;
                         nRetrieved += results.length;
@@ -175,6 +192,7 @@ const withAuthentication = Component => {
             }
         }
         async setActiveConference(conf) {
+            console.log('[wA]: changing conference to ' + conf.conferenceName);
             this.refreshUser(conf, true);
         }
 
@@ -218,21 +236,24 @@ const withAuthentication = Component => {
             return res;
         }
 
-        // activeConference(teamID){
-        //     if(teamID){
-        //         this.setState({teamID: teamID})
-        //     }
-        //     else{
-        //         return this.state.teamID;
-        //     }
-        // }
-
         getPresences(component){
             this.presenceWatchers.push(component);
             component.setState({presences: this.presences});
         }
+        unmountProfileDisplay(profileID, component){
+            if(this.userProfileSubscribers[profileID])
+                this.userProfileSubscribers[profileID] = this.userProfileSubscribers[profileID].filter(c=>c!=component);
+        }
         cancelPresenceSubscription(component){
-            this.prsenceWatchers = this.presenceWatchers.filter(v => v!= component);
+            this.presenceWatchers = this.presenceWatchers.filter(v => v!= component);
+        }
+        updateProfile(profile){
+            if(this.userProfileSubscribers[profile.id]){
+                for(let subscriber of this.userProfileSubscribers[profile.id]){
+                    subscriber.setState({profile: profile});
+                }
+            }
+
         }
         updatePresences(){
             if(this.presenceUpdateScheduled){
@@ -271,6 +292,7 @@ const withAuthentication = Component => {
             query.equalTo("conference", this.currentConference);
             query.equalTo("isOnline", true);
 
+
             this.socialSpaceSubscription = this.state.parseLive.subscribe(query, user.getSessionToken());
             this.socialSpaceSubscription.on('create', (presence) => {
                 this.newPresences.push(presence);
@@ -292,6 +314,7 @@ const withAuthentication = Component => {
                 this.presences[presence.get("user").id] = presence;
                 this.updatePresences();
             })
+
             let presences = await query.find();
             let presenceByProfile = {};
             for(let presence of presences){
@@ -299,6 +322,14 @@ const withAuthentication = Component => {
             }
             //trigger a big fetch of all of the profiles at once
             await this.getUserProfilesFromUserProfileIDs(Object.keys(presenceByProfile));
+            let profilesQuery = new Parse.Query("UserProfile");
+            profilesQuery.equalTo("conference", this.currentConference);
+            profilesQuery.limit(2000);
+            this.profilesSubscription = this.state.parseLive.subscribe(profilesQuery, user.getSessionToken());
+            this.profilesSubscription.on("update", (profile)=>{
+                this.userProfiles[profile.id] = new Promise((resolve)=>(resolve(profile)));
+                this.updateProfile(profile);
+            })
             for(let presence of presences){
                 this.presences[presence.get("user").id] = presence;
             }
@@ -349,10 +380,16 @@ const withAuthentication = Component => {
 
 
 
-        async getUserProfilesFromUserProfileID(id) {
+        async getUserProfilesFromUserProfileID(id, subscriber) {
             let q = new Parse.Query(UserProfile);
             let users = [];
             let toFetch = [];
+            if(subscriber){
+                if(!this.userProfileSubscribers[id]){
+                    this.userProfileSubscribers[id] = [];
+                }
+                this.userProfileSubscribers[id].push(subscriber);
+            }
             if (this.userProfiles[id]) {
                 let p = await this.userProfiles[id];
                 return p;
@@ -486,33 +523,34 @@ const withAuthentication = Component => {
             let _this = this;
             return Parse.User.currentAsync().then(async function (user) {
                 if (user) {
-                    const query = new Parse.Query(Parse.User);
-                    query.include(["tags"]);
                     try {
-                        let userWithRelations = await query.get(user.id);
 
                         if (!_this.isLoggedIn) {
                             _this.isLoggedIn = true;
-                            _this.authCallbacks.forEach((cb) => (cb(userWithRelations)));
+                            _this.authCallbacks.forEach((cb) => (cb(user)));
                         }
                         let session = await Parse.Session.current();
-                        const roleQuery = new Parse.Query(Parse.Role);
-                        roleQuery.equalTo("users", userWithRelations);
 
+                        // Valid conferences for this user
+                        let profiles = await user.relation("profiles").query().include("conference").find();
+                        let validConferences = profiles.map(p => p.get("conference"));
+                        console.log(validConferences)
+                        // console.log("[withAuth]: valid conferences: " + validConferences.map(c => c.id).join(", "));
+
+                        // Roles for this user
+                        const roleQuery = new Parse.Query(Parse.Role);
+                        roleQuery.equalTo("users", user);
                         const roles = await roleQuery.find();
 
                         let isAdmin = _this.state ? _this.state.isAdmin : false;
-                        let validConferences = [];
-
-                        let validConfQ= new Parse.Query("ClowdrInstanceAccess");
-                        validConfQ.include('instance');
-                        let validInstances = await validConfQ.find();
-                        validConferences=validInstances.map(i=>i.get("instance"));
+                        let isModerator = _this.state ? _this.state.isModerator : false;
+                        let isManager = _this.state ? _this.state.isManager : false;
+                        let isClowdrAdmin = _this.state ? _this.state.isClowdrAdmin : false;
 
                         let conf = _this.currentConference;
                         let currentProfileID = sessionStorage.getItem("activeProfileID");
                         let activeProfile = null;
-                        if(currentProfileID){
+                        if (currentProfileID) {
                             let profileQ = new Parse.Query(UserProfile);
                             profileQ.include("conference");
                             profileQ.include("tags");
@@ -525,13 +563,30 @@ const withAuthentication = Component => {
                             }
                         }
                         for (let role of roles) {
-                            if (role.get("name") == "ClowdrSysAdmin")
+                            if (role.get("name") == "ClowdrSysAdmin") {
                                 isAdmin = true;
+                                isClowdrAdmin = true;
+                            }
+                            if (activeProfile && role.get("name") == (activeProfile.get("conference").id + "-admin")) {
+                                isAdmin = true;
+                                isClowdrAdmin = true;
+                                isManager = true;
+                                isModerator = true;
+                            }
+                            if (activeProfile && role.get("name") == (activeProfile.get("conference").id + "-moderator")) {
+                                isModerator = true;
+                            }
+                            if (activeProfile && role.get("name") == (activeProfile.get("conference").id + "-manager")) {
+                                isModerator = true;
+                                isManager = true;
+                            }
                         }
                         if(!activeProfile){
-                            if(!preferredConference && process.env.REACT_APP_DEFAULT_CONFERENCE){
+                            let defaultConferenceName = _this.getDefaultConferenceName();
+
+                            if(!preferredConference && defaultConferenceName){
                                 let confQ = new Parse.Query("ClowdrInstance")
-                                confQ.equalTo("conferenceName", process.env.REACT_APP_DEFAULT_CONFERENCE);
+                                confQ.equalTo("conferenceName", defaultConferenceName);
                                 preferredConference = await confQ.first();
                             }
                             if (preferredConference) {
@@ -539,14 +594,16 @@ const withAuthentication = Component => {
                                 if (!conf) {
                                     conf = validConferences[0];
                                 }
-                            } else if(!conf)
+                            } else if(!conf) {
                                 conf = validConferences[0];
+                            }
                             let profileQ = new Parse.Query(UserProfile);
                             profileQ.equalTo("conference",conf);
-                            profileQ.equalTo("user",userWithRelations);
+                            profileQ.equalTo("user",user);
                             profileQ.include("tags");
                             activeProfile = await profileQ.first();
                             sessionStorage.setItem("activeProfileID",activeProfile.id);
+
                             window.location.reload(false);
                         }
                         const privsQuery = new Parse.Query("InstancePermission");
@@ -564,9 +621,9 @@ const withAuthentication = Component => {
                         }
                         let priorConference = _this.state.currentConference;
                         _this.currentConference = conf;
-                        _this.user = userWithRelations;
+                        _this.user = user;
                         _this.userProfile = activeProfile;
-                        _this.state.chatClient.initChatClient(userWithRelations, conf, activeProfile);
+                        _this.state.chatClient.initChatClient(user, conf, activeProfile);
 
                         try {
                             await _this.setSocialSpace(null, spacesByName['Lobby'], user, activeProfile);
@@ -581,24 +638,26 @@ const withAuthentication = Component => {
                         });
                         _this.setState((prevState) => { return ({
                             spaces: spacesByName,
-                            user: userWithRelations,
+                            user: user,
                             userProfile: activeProfile,
-                            teamID: session.get("activeTeam"),
                             isAdmin: isAdmin,
+                            isModerator: isModerator,
+                            isManager: isManager,
+                            isClowdrAdmin: isClowdrAdmin,
                             permissions: permissions.map(p=>p.get("action").get("action")),
                             validConferences: validConferences,
                             currentConference: conf,
                             loading: false,
-                            roles: roles
+                            roles: roles,
+                            programCache: new ProgramCache(conf, _this.parseLive),
                         })}, ()=>{
                             finishedStateFn()});
-
-                        await stateSetPromise;
-                        if(priorConference && priorConference.id != conf.id){
-                            window.location.reload(false);
-                        }
+                            await stateSetPromise;
+                            if(priorConference && priorConference.id != conf.id){
+                                window.location.reload(false);
+                            }
                         _this.forceUpdate();
-                        return userWithRelations;
+                        return user;
                     } catch (err) {
                         console.log("[withAuth]: err: " + err);
                         //TODO uncomment
@@ -627,15 +686,17 @@ const withAuthentication = Component => {
                         _this.chatClient = null;
                     }
                     let conference = null;
-                    if(process.env.REACT_APP_DEFAULT_CONFERENCE){
+                    let defaultConferenceName = _this.getDefaultConferenceName();
+                    if(defaultConferenceName){
                         let confQ = new Parse.Query("ClowdrInstance")
-                        confQ.equalTo("conferenceName", process.env.REACT_APP_DEFAULT_CONFERENCE);
+                        confQ.equalTo("conferenceName", defaultConferenceName);
                         conference = await confQ.first();
                     }
                     _this.setState({
                         user: null,
                         videoRoomsLoaded: false,
                         currentConference: conference,
+                        programCache: new ProgramCache(conference, _this.parseLive),
                         loading: false,
                         users: {}
                     })
@@ -644,6 +705,34 @@ const withAuthentication = Component => {
                 }
                 // do stuff with your user
             });
+        }
+
+        getDefaultConferenceName() {
+            let defaultConferenceName = process.env.REACT_APP_DEFAULT_CONFERENCE;
+            let hostname = window.location.hostname;
+            if(hostname && (hostname.endsWith("clowdr.org") || hostname.endsWith("clowdr.internal"))){
+                let confHostname = hostname.substring(0, hostname.indexOf('.'));
+                defaultConferenceName = confHostname.substring(0, confHostname.indexOf('2'));
+                defaultConferenceName = defaultConferenceName + " " + confHostname.substring(confHostname.indexOf('2'));
+                defaultConferenceName = defaultConferenceName.toUpperCase();
+            }
+            return defaultConferenceName;
+        }
+
+       async getBreakoutRoom(id, component){
+            if(!this.activePublicVideoRooms)
+                await this.subscribeToPublicRooms();
+            let room = this.activePublicVideoRooms.find(v=>v.id == id);
+            if(room){
+                if(!this.activePublicVideoRoomSubscribers[id])
+                    this.activePublicVideoRoomSubscribers[id] = [];
+                this.activePublicVideoRoomSubscribers[id].push(component);
+            }
+            return room;
+        }
+        cancelBreakoutRoomSubscription(id, component){
+            if(this.activePublicVideoRoomSubscribers[id])
+                this.activePublicVideoRoomSubscribers[id] = this.activePublicVideoRoomSubscribers[id].filter(v=>v!=component);
         }
         async subscribeToPublicRooms() {
             if(!this.currentConference){
@@ -665,6 +754,8 @@ const withAuthentication = Component => {
                     }
                 }
                 res.forEach(this.notifyUserOfChanges.bind(this));
+                this.activePublicVideoRooms = res;
+                this.activePublicVideoRoomSubscribers = {};
                 this.setState({activePublicVideoRooms: res})
                 if (this.parseLivePublicVideosSub) {
                     this.parseLivePublicVideosSub.unsubscribe();
@@ -672,11 +763,13 @@ const withAuthentication = Component => {
                 this.parseLivePublicVideosSub = this.state.parseLive.subscribe(query, this.user.getSessionToken());
                 this.parseLivePublicVideosSub.on('create', async (vid) => {
                     vid = await this.populateMembers(vid);
+                    this.activePublicVideoRooms.push(vid);
                     this.setState((prevState) => ({
                         activePublicVideoRooms: [vid, ...prevState.activePublicVideoRooms]
                     }))
                 })
                 this.parseLivePublicVideosSub.on("delete", vid => {
+                    this.activePublicVideoRooms = this.activePublicVideoRooms.filter(v=> v.id != vid.id);
                     this.setState((prevState) => ({
                         activePublicVideoRooms: prevState.activePublicVideoRooms.filter((v) => (
                             v.id != vid.id
@@ -685,9 +778,11 @@ const withAuthentication = Component => {
                 });
                 this.parseLivePublicVideosSub.on('update', async (newItem) => {
                     newItem = await this.populateMembers(newItem);
-                    console.log("Update: " + newItem.id)
-                    console.log(newItem.get("members"))
                     this.notifyUserOfChanges(newItem);
+                    this.activePublicVideoRooms = this.activePublicVideoRooms.map(room=>room.id == newItem.id ? newItem : room);
+                    if(this.activePublicVideoRoomSubscribers[newItem.id])
+                        for(let obj of this.activePublicVideoRoomSubscribers[newItem.id])
+                            obj.setState({BreakoutRoom : newItem});
                     //Deliver notifications if applicable
                     this.setState((prevState) => ({
                         activePublicVideoRooms: prevState.activePublicVideoRooms.map(room => room.id == newItem.id ? newItem : room)
@@ -812,6 +907,15 @@ const withAuthentication = Component => {
             this.setState({videoRoomsLoaded: true});
         }
 
+        userHasWritePermission(object){
+            let acl = object.getACL();
+            if(acl.getWriteAccess(this.user))
+                return true;
+            if(this.state.roles.find(v => v.get('name') == this.state.currentConference.id+'-manager' || v.get('name') == this.state.currentConference.id+"-admin"))
+                return true;
+            return false;
+        }
+
         componentDidMount() {
             const Flair = Parse.Object.extend("Flair");
             const query = new Parse.Query(Flair);
@@ -839,6 +943,12 @@ const withAuthentication = Component => {
 
         componentWillUnmount() {
             this.mounted = false;
+            if(this.socialSpaceSubscription){
+                this.socialSpaceSubscription.unsubscribe();
+            }
+            if(this.profilesSubscription){
+                this.profilesSubscription.unsubscribe();
+            }
             if (this.parseLivePublicVideosSub) {
                 this.parseLivePublicVideosSub.unsubscribe();
             }
@@ -856,7 +966,7 @@ const withAuthentication = Component => {
                 </div>
             return (
                 <AuthUserContext.Provider value={this.state}>
-                    <Component {...this.props}  authContext={this.state} parseLive={this.state.parseLive} />
+                    <Component {...this.props}  clowdrAppState={this.state} parseLive={this.state.parseLive} />
                 </AuthUserContext.Provider>
             );
         }
