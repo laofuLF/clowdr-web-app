@@ -162,11 +162,11 @@ class ActiveUsers extends React.Component<ActiveUsersProps, ActiveUsersState> {
 
     render() {
         if (!this.state.loggedIn) {
-            return <Card title="Active Users" style={{ height: '75vh', overflow: 'auto', border: '1px solid #FAFAFA' }}>
+            return <Card title="Active Users" style={{ height: '75vh', overflow: 'auto', border: '1px solid' }}>
             </Card>
         }
         return (
-            <Card title="Active Users" style={{ height: '75vh', overflow: 'auto', border: '1px solid #FAFAFA' }}>
+            <Card title="Active Users" style={{ height: '75vh', overflow: 'auto', border: '1px solid' }}>
                 {/*<InfiniteScroll*/}
                 {/*    pageStart={0}*/}
                 {/*    // hasMore={Object.keys(this.state.activeUsers).length >= 20}*/}

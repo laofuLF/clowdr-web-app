@@ -86,8 +86,9 @@ class SocialTab extends Component {
                           className="activeRoomsSider"
                           width={this.state.siderWidth}
                              collapsedWidth={0}
-                             theme="light"
-                          style={{backgroundColor: '#f8f8f8',
+                             // theme="light"
+                          style={{
+                              // backgroundColor: '#f8f8f8',
                               overflowY:"auto",
                               overflowX:"hidden",
                               overflowWrap:"break-word",

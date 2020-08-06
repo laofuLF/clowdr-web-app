@@ -362,12 +362,12 @@ class ChatContainer extends Component {
                             Chat {this.state.expanded ?
                             <CloseOutlined style={{verticalAlign: 'middle'}}/> :
                             <ArrowUpOutlined style={{verticalAlign: 'middle'}}/>}</span>} key="Chat" style={{
-                            border: "1px solid #CCCCCC"
+                            border: "1px solid"
                         }}>
 
                             {this.state.expanded ?
                                 <Layout>
-                                    <Sider style={{backgroundColor: "white"}}>
+                                    <Sider>
                                         <Divider style={{verticalAlign: 'middle'}}>Channels <Popover
                              mouseEnterDelay={0.5}
                                             content={<span onClick={()=>{this.setState({newChannelVisible: true})}}><a href="#">New channel</a></span>}
@@ -425,7 +425,7 @@ class ChatContainer extends Component {
                                          : <Spin tip="Loading..." />}
                                     </Sider>
                                     <Layout>
-                                    <Content style={{backgroundColor:"#FFFFFF", overflow:"auto"}}>
+                                    <Content style={{overflow:"auto"}}>
                                         {/*<Affix>*/}
                                         {/*    <Picker onSelect={this.reactTo}/>*/}
                                         {/*</Affix>*/}
@@ -477,7 +477,7 @@ class ChatContainer extends Component {
                                               display: 'flex',
                                               flexDirection: 'column-reverse',
                                               overflow: 'auto',
-                                              border: '1px solid #FAFAFA'
+                                              border: '1px solid'
                                           }}
                                     >
                                     </List>

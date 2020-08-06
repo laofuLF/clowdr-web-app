@@ -144,7 +144,6 @@ class App extends Component {
         }
         reader.readAsDataURL(file);
         return false;
-
     }
 
     siteHeader() {
@@ -191,14 +190,18 @@ class App extends Component {
                 else
                     logo = <img src={headerImage.url()} className="App-logo" height="75" alt="logo"/> 
     
-                return <table className="site-layout-background" style={{height: "75px", clear: "both"}}>
+                return <div style={{height: "75px", clear:'both', overflow: "hidden"}}>
+                    <table className="site-layout-background" style={{float: "left"}}>
                         <tbody><tr>
-                        <td>{logo}</td>
-                        <td><Typography.Title style={{display: "inherit"}}>
-                            {headerText}
-                            <Toggle theme={this.state.theme} toggleTheme={this.themeToggle.bind(this)}/>
-                        </Typography.Title></td><td>{confSwitcher}</td>
-                        </tr></tbody></table>
+                            <td>{logo}</td>
+                            <td><Typography.Title style={{display: "inherit"}}>
+                                {headerText}
+                            </Typography.Title></td><td>{confSwitcher}</td>
+                        </tr></tbody>
+                    </table>
+                    <Toggle theme={this.state.theme} toggleTheme={this.themeToggle.bind(this)}/>
+                </div>
+
             }
             else if (headerText) {
                 let logo = "";
@@ -209,19 +212,29 @@ class App extends Component {
                                     </Button>
                             </Upload>
                 }
-                return <table className="site-layout-background" style={{height: "75px", clear: "both"}}>
-                        <tbody><tr>
-                            <td>{logo}</td><td><Typography.Title style={{display: 'inherit'}}>
-                            {headerText}
-                            <Toggle theme={this.state.theme} toggleTheme={this.themeToggle.bind(this)}/>
-                            </Typography.Title></td>
-                            {/*<td><Toggle theme={this.state.theme} toggleTheme={this.themeToggle.bind(this)}/></td>*/}
-                            <td>{confSwitcher}</td>
-                        </tr></tbody></table>
+                return <div style={{overflow: "hidden"}}>
+                    <table className="site-layout-background" style={{height: "75px", clear: "both"}}>
+                        <tbody>
+                            <tr>
+                                <td>{logo}</td>
+                                <td><Typography.Title style={{display: 'inherit'}}>{headerText}</Typography.Title></td>
+                                <td>{confSwitcher}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <Toggle theme={this.state.theme} toggleTheme={this.themeToggle.bind(this)}/>
+                </div>
+
             } else
-                return <div className="site-layout-background" style={{clear:'both' }}>
-                   <div style={{float:'left'}}><Typography.Title>
-                       {this.state.conference.get('conferenceName')} Group Video Chat</Typography.Title></div>{confSwitcher}</div>
+                return (
+                    <div className="site-layout-background" style={{clear:'both', overflow: "hidden"}}>
+                           <div style={{float:'left'}}>
+                               <Typography.Title>
+                                   {this.state.conference.get('conferenceName')} Group Video Chat
+                               </Typography.Title>
+                               <Toggle theme={this.state.theme} toggleTheme={this.themeToggle.bind(this)}/>
+                           </div>{confSwitcher}
+                    </div>)
         }
     }
 
@@ -339,7 +352,6 @@ class App extends Component {
         this.setState({lobbyWidth: w});
     }
 
-
     render() {
         if (this.state.isMagicLogin) {
             return <Route exact path="/fromSlack/:team/:token" component={SlackToVideo}/>
@@ -390,7 +402,7 @@ class App extends Component {
                                     paddingRight: this.state.chatWidth,
                                     paddingLeft: this.state.lobbyWidth
                                 }}>
-                                    <div style={{padding: 24, background: this.state.theme === 'light' ? 'white' : '#141414'}}>
+                                    <div>
                                         {this.routes()}
                                     </div>
 

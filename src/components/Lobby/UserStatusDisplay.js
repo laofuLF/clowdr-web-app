@@ -57,7 +57,7 @@ class UserStatusDisplay extends React.Component{
         let presenceDesc = "";
         let badgeColor = "";
         let badgeStyle = "default";
-        let nameColor = "black";
+        // let nameColor = "black";
         let dntWaiver = "";
         if(this.state.presence && this.state.presence.get("isOnline")) {
             presenceDesc = "(Online)";
@@ -170,7 +170,7 @@ class UserStatusDisplay extends React.Component{
                         title={popoverTitle} content={popoverContent} mouseEnterDelay={0.5}>
                       &nbsp;&nbsp;&nbsp; {/* BCP: Better way to do this? */}
                       <Badge status={badgeStyle} color={badgeColor} />
-                      <span style={{color:nameColor}}>{this.state.profile.get("displayName")}</span>
+                      <span>{this.state.profile.get("displayName")}</span>
                       &nbsp;
                       <span className="highlightedTags">{tagsToHighlight}</span>
 

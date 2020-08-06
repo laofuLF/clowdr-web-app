@@ -233,7 +233,7 @@ class ContextualActiveUsers extends React.Component {
             let programInfo = <UpcomingProgram />
             tabs = <div>
                 <div>
-                    <div style={{height:'6px', background:'white'}}/>
+                    <div style={{height:'6px'}}/>
 
                     <Select style={{width: "100%"}} showSearch
                             allowClear={true}
@@ -248,11 +248,11 @@ class ContextualActiveUsers extends React.Component {
 
                             options={searchOptions} placeholder="Search for people and rooms"></Select>
 
-                    <div style={{height:'6px', background:'white'}}/>
+                    <div style={{height:'6px'}}/>
 
                     <div><PresenceForm /></div>
 
-                    <div style={{height:'6px', background:'white'}}/>
+                    <div style={{height:'6px'}}/>
 
                     <Divider className="social-sidebar-divider">
                         <Tooltip mouseEnterDelay={0.5} title="Social features in CLOWDR are organized around different 'rooms' that represent different aspects of the conference. The list below shows who else is in this room, right now.">{activeSpace}</Tooltip>
@@ -266,8 +266,7 @@ class ContextualActiveUsers extends React.Component {
                                   // overflow: 'auto',
                                   // display: 'flex',
                                   // flexDirection: 'column-reverse',
-                                  border: '1px solid #FAFAFA'
-
+                                  border: '1px solid transparent'
                               }}
                               inlineIndent={0}
 
@@ -316,8 +315,7 @@ class ContextualActiveUsers extends React.Component {
                           // overflow: 'auto',
                           // display: 'flex',
                           // flexDirection: 'column-reverse',
-                          border: '1px solid #FAFAFA'
-
+                          border: '1px solid transparent'
                       }}
                       inlineIndent={0}
                       selectedKeys={selectedKeys}
@@ -369,7 +367,7 @@ class ContextualActiveUsers extends React.Component {
                 <Menu mode="inline"
                       className="activeRoomsList"
                     style={{
-                        border: '1px solid #FAFAFA'
+                        border: '1px solid transparent'
                     }}
                       inlineIndent={0}
 

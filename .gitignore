@@ -33,3 +33,5 @@ db/.env-db
 TAGS
 *.tmp
 /.env.localdev
+backend/cloud/node_modules
+backend/cloud/package-lock.json
