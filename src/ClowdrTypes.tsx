@@ -4,6 +4,8 @@ import * as Parse from 'parse';
 import ProgramCache from "./components/Session/ProgramCache";
 import ChatClient from "./classes/ChatClient";
 import {History} from "history";
+import Conversation from "./classes/Conversation";
+import {Channel} from "twilio-chat/lib/channel";
 // Is this one needed?
 // import ProgramItem from "./classes/ProgramItem";
 
@@ -14,8 +16,8 @@ type Role = any
 
 export type UserSessionToken = string
 
-export interface ClowdrAppState {
-    spaces: Map<string, SocialSpace>;   
+export interface ClowdrState {
+    spaces: Map<string, SocialSpace>;   // TS: Or maybe better a Record??
     user: Parse.User | null;
     userProfile: UserProfile | null;
     isAdmin: boolean;
@@ -31,6 +33,7 @@ export interface ClowdrAppState {
     getLiveChannel: any;
     chatClient: ChatClient;
     history: History;
+    activeSpace: any;
     getUserProfile(authorID: string, arg1: (u: any) => void) : any;   // ???
 }
 
@@ -44,8 +47,26 @@ export interface EditableCellProps extends React.HTMLAttributes<HTMLElement> {
     children: React.ReactNode;
 }
 
-/* @Crista: advice about these?
-Some more fields that might belong (copied from withAuthentication.js -- are they relevant?)
+export interface JoinedChatChannel {
+    attributes: any; //json object we store in twilio
+    conversation?: Conversation;
+    members: string[]; //list of userProfileIDs
+    channel: Channel;
+}
+export interface ChatChannelConsumer{
+    setJoinedChannels(channels: string[]): void;
+    setAllChannels(channels: Channel[]): void;
+}
+export interface MultiChatApp{
+    registerChannelConsumer(consumer: ChatChannelConsumer): void;
+    openChat(sid: string, dontBringIntoFocus: boolean): void;
+    registerUnreadConsumer(sid: string, consumer: any): void;
+    cancelUnreadConsumer(sid: string, consumer: any): void;
+
+}
+/* 
+
+Some more fields that might be needed (copied from withAuthentication.js -- are they relevant?)
 {
                 currentRoom: null,
                 history: this.props.history,
