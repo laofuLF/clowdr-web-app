@@ -105,6 +105,7 @@ class NewRoomForm extends React.Component {
                                         identity: idToken,
                                         socialSpace: values.socialSpace,
                                         slackTeam: this.props.auth.currentConference.get("slackWorkspace"),
+                                        conference: this.props.auth.currentConference.id
                                     }),
                                     headers: {
                                         'Content-Type': 'application/json'
@@ -145,7 +146,7 @@ class NewRoomForm extends React.Component {
                         <Form.Item
                             name="socialSpace"
                             label="Parent Room"
-                            extra="Help attendees find your breakout room by associating it with an existing room"
+                            extra="Help attendees find your new chat room by associating it with an existing room"
                         >
                             <Select options={selectOptions}>
                             </Select>

@@ -5,6 +5,11 @@ import Parse from "parse";
 import {LoadingOutlined} from '@ant-design/icons';
 import LandingContainer from "../LandingContainer";
 
+// BCP: are we ready to jettison slack yet?
+// Jon: Yeah, let's dump it.
+// (but then we realized that it is still needed for the Security Shield feature...)
+// Jon: Once we get the new chat interface, there should just be a moderators channel in app
+
 class SlackToVideo extends React.Component {
 
     constructor(props) {
@@ -36,8 +41,8 @@ class SlackToVideo extends React.Component {
         let roomName = res.roomName;
         try {
             let u = await Parse.User.become(res.token);
-            let conf = await this.props.authContext.getConferenceBySlackName(team);
-            await this.props.authContext.refreshUser(conf, true);
+            let conf = await this.props.clowdrAppState.getConferenceBySlackName(team);
+            await this.props.clowdrAppState.refreshUser(conf, true);
             if(!roomName){
                 this.props.history.push("/lobby");
                 return;
@@ -67,7 +72,7 @@ class SlackToVideo extends React.Component {
         }
         const antIcon = <LoadingOutlined color="white" style={{ fontSize: 96 }} spin />;
 
-        if(this.props.authContext.user){
+        if(this.props.clowdrAppState.user){
             return <div></div>
         }
         return <div id="landing-page">
@@ -91,7 +96,7 @@ const
     AuthConsumer = (props) => (
         <AuthUserContext.Consumer>
             {value => (
-                <SlackToVideo {...props} user={value.user} authContext={value}/>
+                <SlackToVideo {...props} user={value.user} clowdrAppState={value}/>
             )}
         </AuthUserContext.Consumer>
     );

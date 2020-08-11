@@ -16,40 +16,45 @@ let LiveActivity = Parse.Object.extend("LiveActivity");
 let Channel = Parse.Object.extend("Channel");
 let UserProfile = Parse.Object.extend("UserProfile");
 
-Parse.Cloud.define("registrations-upload", (request) => {
+Parse.Cloud.define("registrations-upload", async (request) => {
     console.log('Request to upload registration data');
     const data = request.params.content;
     const conferenceID = request.params.conference;
-
     var Registration = Parse.Object.extend("Registration");
     var rquery = new Parse.Query(Registration);
     rquery.equalTo("conference", conferenceID);
     rquery.limit(10000);
-    rquery.find().then(existing => {
-        let toSave = [];
-        
-        rows = Papa.parse(data, {header: true});
-        rows.data.forEach(element => {
-            addRow(element, conferenceID, existing, toSave);
-        });
-
-        Parse.Object.saveAll(toSave)
-        .then (res => console.log("[Registrations]: Done saving all registrations"))
-        .catch(err => console.log(err))
-        
-    }).catch(err => console.log('[Registrations]: Problem fetching registrations ' + err));
-
+    var existing = await rquery.find({useMasterKey: true});
+    // Create registrations first
+    let toSave = [];
+    let rows = Papa.parse(data, {header: true});
+    rows.data.forEach(element => {
+        addRow(element, conferenceID, existing, toSave);
+    });
+    try {
+        await Parse.Object.saveAll(toSave, {useMasterKey: true});
+    } catch(err){
+        console.log(err);
+    }
+    console.log('Tracks saved: ' + toSave.length);
+    return toSave;
 });
 
 function addRow(row, conferenceID, existing, toSave) {
     if (row.email) {
         if (validateEmail(row.email)) {
-            if (!existing.find(r => r.get("email") == row.email)) {
+            if (!existing.find(r => r.get("email") === row.email)) {
                 var Registration = Parse.Object.extend("Registration");
                 var reg = new Registration();
                 // Two required fields: email and conference ID
                 reg.set("email", row.email);
                 reg.set("conference", conferenceID);
+                let acl = new Parse.ACL();
+                acl.setPublicWriteAccess(false);
+                acl.setPublicReadAccess(false);
+                acl.setRoleReadAccess(conferenceID+"-admin", true);
+                acl.setRoleWriteAccess(conferenceID+"-admin", true);
+                reg.setACL(acl);
                 // Everything else is optional
                 if (row.first && row.last)
                     reg.set("name", row.first + " " + row.last);
@@ -86,24 +91,32 @@ async function getConferenceInfoForMailer(conf) {
         let frontendURLQuery = new Parse.Query(InstanceConfig);
         frontendURLQuery.equalTo("instance", conf);
         frontendURLQuery.equalTo("key", "FRONTEND_URL");
+        let senderQuery = new Parse.Query(InstanceConfig);
+        senderQuery.equalTo("instance", conf);
+        senderQuery.equalTo("key", "SENDGRID_SENDER");
 
-        let compoundQ = Parse.Query.or(keyQuery, frontendURLQuery);
+        let compoundQ = Parse.Query.or(keyQuery, frontendURLQuery, senderQuery);
+        console.log("Looking for conference info for")
+        console.log(conf)
 
         compoundQ.include("instance");
         let config = await compoundQ.find({useMasterKey: true});
-        let sgKey = null, confObj = null, frontendURL = null;
+        let sgKey = null, confObj = null, frontendURL = null, sender = null;
         for (let res of config) {
             if (res.get("key") == "SENDGRID_API_KEY") {
                 sgKey = res.get("value");
                 confObj = res.get("instance");
             } else if (res.get("key") == "FRONTEND_URL") {
                 frontendURL = res.get("value");
+            } else if (res.get("key") == "SENDGRID_SENDER") {
+                sender = res.get("value");
             }
         }
         let info = {
             conference: confObj,
             sendgrid: sgKey,
-            frontendURL: frontendURL
+            frontendURL: frontendURL,
+            sender: sender
         };
         conferenceInfoCache[conf.id] = info;
     }
@@ -344,7 +357,8 @@ Parse.Cloud.define("registrations-inviteUser", async (request) => {
     let fauxConf = new ClowdrInstance();
     fauxConf.id = confID;
     let config = await getConferenceInfoForMailer(fauxConf);
-    var fromEmail = new sgMail.Email('welcome@clowdr.org');
+    console.log('[InviteUser]: sender is ' + config.sender);
+    var fromEmail = new sgMail.Email(config.sender ? config.sender : 'welcome@clowdr.org');
 
     const roleQuery = new Parse.Query(Parse.Role);
     roleQuery.equalTo("name", confID + "-conference");
@@ -374,7 +388,7 @@ Parse.Cloud.define("registrations-inviteUser", async (request) => {
                 let userACL = new Parse.ACL();
                 userACL.setWriteAccess(user, true);
                 userACL.setReadAccess(user, true);
-                userACL.setRoleReadAccess("moderators", true);
+                userACL.setRoleReadAccess(confID + "-manager", true);
                 userACL.setPublicReadAccess(false);
                 user.setACL(userACL);
                 user = await user.save({}, {useMasterKey: true})
@@ -396,7 +410,9 @@ Parse.Cloud.define("registrations-inviteUser", async (request) => {
             userProfileQ.equalTo("conference", config.conference);
             let profile = await userProfileQ.first({useMasterKey: true});
             if (!profile) {
+                console.log('[InviteUser]: creating profile for ' + user.get("email"));
                 role.getUsers().add(user);
+
                 createdNewProfile = true;
                 let profile = new UserProfile();
                 profile.set("user", user);
@@ -418,6 +434,7 @@ Parse.Cloud.define("registrations-inviteUser", async (request) => {
                 await registrant.save({}, {useMasterKey: true});
 
                 await user.save({}, {useMasterKey: true});
+
                 if (!createdNewUser && user.get("passwordSet"))
                     instructionsText = "We matched your email address (" + registrant.get("email") + ") to your existing Clowdr.org account - " +
                         "you can use your existing credentials to login or reset your password here: " + joinURL(config.frontendURL, "/signin");

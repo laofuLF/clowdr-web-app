@@ -2,6 +2,7 @@ import React from "react";
 import {AuthUserContext} from "../Session";
 import {Badge, Button, Form, Input, message, Modal, Select, Skeleton, Tooltip} from "antd"
 import ChatFrame from "../Chat/ChatFrame";
+import MultiChatWindow from "../Chat/MultiChatWindow"
 import {CloseOutlined, MinusOutlined, PlusOutlined, VideoCameraAddOutlined} from "@ant-design/icons"
 import Parse from "parse";
 
@@ -147,22 +148,12 @@ class BottomChat extends React.Component {
                 </Form.Item>
             }
             return (
-                <div id="bottom-chat-container" style={this.props.style}><div id="bottom-chat-button-bar">{
-                    this.state.chats.map((sid)=>
-                        (<BottomChatWindow key={sid} open={this.state[sid]}
-                                           sid={sid}
-                                           auth={this.props.auth}
-                                           parentRef={this}
-                                           addUser={this.addUser.bind(this,sid)}
-                                           toVideo={this.toVideo.bind(this,sid)}
-                                           toggleOpen={()=>{
-                            this.setState((prevState) => ({[sid]: !prevState[sid]}))
-                        }}
-                        chatClient={this.props.auth.chatClient}
-                        />)
-                    )
-                }
-                </div>
+                <><MultiChatWindow                                            parentRef={this}
+                                                                              addUser={this.addUser.bind(this)}
+                                                                              toVideo={this.toVideo.bind(this)}
+                                                                              closeWindow={(sid) => this.removeChannel(sid)}
+                />
+                <div id="bottom-chat-container" style={this.props.style}>
                     <Modal
                         zIndex="200"
                         title="Add a User to this Chat"
@@ -285,6 +276,7 @@ class BottomChat extends React.Component {
                         </Form>
                     </Modal>
                 </div>
+                    </>
             )
         }
         return <></>
@@ -386,14 +378,8 @@ class BottomChatWindow extends React.Component{
         }
     }
 
-    destroyChat(){
-        let attr = this.props.chatClient.joinedChannels[this.props.sid].attributes;
-        if(attr.category == "announcements-global"){
-            this.props.toggleOpen();
-        }
-        else{
-            this.state.chat.channel.leave();
-        }
+    closeChat(){
+        this.props.closeWindow();
     }
 
     async toVideo() {
@@ -458,7 +444,7 @@ class BottomChatWindow extends React.Component{
             <div className="bottomChatHeaderItems">
             <div className="bottomChatIdentity">{title}</div>
             <div className="bottomChatClose">
-                <Tooltip mouseEnterDelay={0.5} title="Launch a video breakout room from this chat">
+                <Tooltip mouseEnterDelay={0.5} title="Launch a video chat room">
                     <Button size="small" type="primary" shape="circle" style={{minWidth: "initial"}}
                             loading={this.state.newVideoChatLoading}
                             icon={<VideoCameraAddOutlined />}
@@ -468,11 +454,10 @@ class BottomChatWindow extends React.Component{
                     <Button size="small" type="primary" shape="circle" style={{minWidth: "initial"}}  icon={<PlusOutlined />}
                                                               onClick={this.props.addUser}
                 /></Tooltip>
-                <Tooltip mouseEnterDelay={0.5} title="Leave this chat"><Button size="small" type="primary" shape="circle"
+                <Tooltip mouseEnterDelay={0.5} title="Close this chat"><Button size="small" type="primary" shape="circle"
                                                               style={{minWidth: "initial"}}  icon={<CloseOutlined />}
             onClick={
-                // this.props.toggleOpen
-                this.destroyChat.bind(this)
+                this.closeChat.bind(this)
             }
             /></Tooltip>
                 <Tooltip mouseEnterDelay={0.5} title="Minimize this window"><Button size="small" type="primary" shape="circle"

@@ -1,11 +1,11 @@
 import React from 'react';
 import {NavLink} from "react-router-dom";
 import Parse from "parse";
-import {Card, Spin, Tooltip, Button, Input, Upload, message} from 'antd';
-import {DownloadOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
+import {Button, Card, message, Spin, Tooltip, Upload} from 'antd';
+import {UploadOutlined} from '@ant-design/icons';
 import {AuthUserContext} from "../Session";
-import {ProgramContext} from "../Program";
 import placeholder from './placeholder.png';
+import ProgramPersonDisplay from "../Program/ProgramPersonDisplay";
 
 class Exhibits extends React.Component {
     constructor(props) {
@@ -14,7 +14,7 @@ class Exhibits extends React.Component {
             dirty: false,
             loading: true,
             posters: [],
-            myposter: undefined,
+            myposters: [],
             gotTracks: false,
             gotItems: false,
             gotPeople: false,
@@ -52,6 +52,7 @@ class Exhibits extends React.Component {
         }
     }
     componentWillUnmount() {
+        this.props.auth.programCache.cancelSubscription("ProgramTrack", this);
         this.props.auth.setSocialSpace("Lobby");
     }
 
@@ -70,22 +71,6 @@ class Exhibits extends React.Component {
         return posters;
     }
 
-    getUserPoster(posters) {
-        console.log(this.first_last)
-        let myposter = posters.find(poster => {
-            let authors = poster.get("authors");
-            let me = authors.find(a => {
-                let fl = a.get('name') ? a.get('name').split() : ["-", "-"];
-                if (fl.length > 2) 
-                    fl = [fl[0], fl[1]];
-                return fl[0] === this.first_last[0] && fl[1] == this.first_last[1];
-            });
-            if (me) return true
-            else return false
-        });
-        console.log(myposter)
-        return myposter;
-    }
 
     async componentDidMount() {
         //For social features, we need to wait for the login to complete before doing anything
@@ -105,121 +90,34 @@ class Exhibits extends React.Component {
             if (this.first_last.length > 2) {
                 this.first_last = [this.first_last[0], this.first_last[1]]; // Just first and last names
             }
-
-            // Call to download program
-            if (!this.props.downloaded) 
-                this.props.onDown(this.props);
-            else {
-                let posters = this.getPosters(this.props.match.params.track, this.props.items, this.props.tracks);
-                this.changeChatPanel(posters);
-                this.setState({
-                    posters: posters,
-                    myposter: this.getUserPoster(posters),
-                    waitForProgram: false
-                });
-            } 
-            
+            this.initializePosters(this.props.match.params.track)
         }
-        this.setState({
-            loading: false
-        });
     }
 
-    initializePosters(track) {
-        console.log(`[Posters]: track ${track}`);
+    async initializePosters(trackName) {
 
-        let posters = this.getPosters(track, this.props.items, this.props.tracks);
+        this.setState({loading: true});
+        let [track, posters] = await Promise.all(
+            [
+                this.props.auth.programCache.getProgramTrackByName(trackName),
+                this.props.auth.programCache.getProgramItemsByTrackName(trackName)
+            ]
+        );
+
+
         this.setState({
-            posters: posters,
-            myposter: this.getUserPoster(posters),
+            ProgramItems: posters,
+            track: track,
+            loading: false,
             waitForProgram: false
         });
         this.changeChatPanel(posters);
     }
 
     componentDidUpdate(prevProps) {
-
-        if (this.state.waitForProgram) {
-            if (this.state.gotItems && this.state.gotTracks && this.state.gotPeople && this.state.gotSessions && this.state.gotRooms) {
-                console.log('[Posters]: Program download complete');
-                this.initializePosters(this.props.match.params.track);
-            }
-            else {
-                console.log('[Posters]: Program still downloading...');
-                if (prevProps.items.length != this.props.items.length) {
-                    this.setState({gotItems: true});
-                    console.log('[Posters]: got items');
-                }
-                if (prevProps.tracks.length != this.props.tracks.length) {
-                    this.setState({gotTracks: true});
-                    console.log('[Posters]: got tracks');
-                }
-                if (prevProps.people.length != this.props.people.length) {
-                    this.setState({gotPeople: true});
-                    console.log('[Posters]: got people');
-                }
-                if (prevProps.sessions.length != this.props.sessions.length) {
-                    this.setState({gotSessions: true});
-                    console.log('[Posters]: got sessions');
-                }
-                if (prevProps.rooms.length != this.props.rooms.length) {
-                    this.setState({gotRooms: true});
-                    console.log('[Posters]: got rooms');
-                }
-            }
-        }
-        // else {
-        //     console.log('[Posters]: Program cached');
-        // }
-
         if (prevProps.match.params.track != this.props.match.params.track) {
             this.initializePosters(this.props.match.params.track);
         }
-    }
-
-    onImageUpload(programItem, file) {
-        // if (!this.state.myposter) {
-        //     console.log("[Posters]: attempt to upload poster without poster id");
-        //     return false;
-        // }
-        const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-        if (!isJpgOrPng) {
-            message.error('You can only upload JPG/PNG file!');
-            return false;
-        }
-        const isLt2M = file.size / 1024 / 1024 < 2;
-        if (!isLt2M) {
-            message.error('Image must be smaller than 2MB!');
-            return false;
-        }
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const data = {
-                content: reader.result,
-                conferenceId: this.props.auth.currentConference.id,
-                posterId: programItem.id
-            };
-
-            Parse.Cloud.run("poster-upload", data).then(async (res) => {
-                message.info("Success! Your poster has been uploaded.");
-                // this.state.myposter.set("image", reader.result);
-                //ok lets just assume for now live query will work
-                let updatedItemQ = new Parse.Query("ProgramItem");
-                let updatedItem = await updatedItemQ.get(programItem.id);
-
-                programItem.set("posterImage", updatedItem.get("posterImage")); //well that is gross
-                console.log(res);
-                this.setState({dirty: !this.state.dirty});
-                console.log('[Posters]: Poster uploaded successfully');
-            });
-        }
-        reader.readAsDataURL(file);
-        return false;
-    }
-
-    onImageDownload() {
-        console.log("[Posters]: onImageDownload");
     }
 
     render() {
@@ -227,14 +125,14 @@ class Exhibits extends React.Component {
         const { Meta } = Card;
 
         if (!this.state.loggedIn)
-            return <div>You are not allowed to see this content</div>
+            return <div>You are not allowed to see this content. Please log in.</div>
 
-        if (this.state.loading || !this.props.downloaded)
+        if (this.state.loading)
             return (
                 <Spin tip="Loading...">
                 </Spin>)
 
-        let track = this.props.tracks.find(t => t.get("name") == this.props.match.params.track)
+        let track = this.state.track;
         let trackName = track ? track.get("displayName") : this.props.match.params.track;
 
         if (this.props.match.params.style == "list") {
@@ -243,8 +141,9 @@ class Exhibits extends React.Component {
                     <h2>{trackName}</h2>
                     {this.state.posters.map((poster) => {
                         let authors = poster.get("authors");
-                        let authorstr = authors.map(a => a.get('name')).join(", ");
-                        
+                        let authorstr= authors.map(a => <ProgramPersonDisplay key={a.id} auth={this.props.auth} id={a.id} />).reduce((prev,curr) => [prev,", ",curr]);
+
+
                         return <p key={poster.id}>
                                 <NavLink to={"/program/" + poster.get("confKey")}>
                                     <strong>{poster.get("title")}</strong> <i>{authorstr}</i>
@@ -258,19 +157,15 @@ class Exhibits extends React.Component {
         return <div> 
             <h2>{trackName}</h2>
             <div className={"space-align-container"}>
-                {this.state.posters.map((poster) => {
+                {this.state.ProgramItems.map((poster) => {
                     let authors = poster.get("authors");
-                    let authorstr = authors.map(a => a.get('name')).join(", ");
-                    
-                    let tool = "";
-                    if (this.state.myposter && (this.state.myposter.id == poster.id))
-                        tool = <span title="Looks like you're an author. Replace the image? Use 3x2 ratio.">
-                                    <Upload accept=".png, .jpg" name='poster' beforeUpload={this.onImageUpload.bind(this, poster)}>
-                                    <Button type="primary">
-                                        <UploadOutlined />Upload
-                                    </Button>
-                                    </Upload>
-                                </span>;
+                    let authorsArr = authors.map(a => <ProgramPersonDisplay key={a.id} auth={this.props.auth} id={a.id} />);
+
+                    let authorstr = "";
+                    if (authorsArr.length >= 1)
+                        authorstr = authorsArr.reduce((prev,curr) => [prev,", ",curr]);
+
+
 
                     let img = placeholder;
                     if (poster.get("posterImage"))
@@ -286,7 +181,6 @@ class Exhibits extends React.Component {
                                         </Tooltip>
                                     </Card>
                                 </NavLink>
-                                {tool}
                             </div>
                 })}
             </div> 
@@ -295,15 +189,11 @@ class Exhibits extends React.Component {
 }
 
 const PostersWithAuth = (props) => (
-    <ProgramContext.Consumer>
-        {({rooms, tracks, items, sessions, people, onDownload, downloaded}) => (
             <AuthUserContext.Consumer>
                 {value => (
-                    <Exhibits {...props} auth={value} rooms={rooms} tracks={tracks} items={items} sessions={sessions} people={people} onDown={onDownload} downloaded={downloaded}/>
+                    <Exhibits {...props} auth={value}  />
                 )}
             </AuthUserContext.Consumer>
-        )}
-    </ProgramContext.Consumer>
 );
 
 export default PostersWithAuth;

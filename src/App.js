@@ -9,7 +9,8 @@ import Lobby from "./components/Lobby"
 import SignUp from "./components/SignUp"
 import SignIn from "./components/SignIn"
 import AccountFromToken from "./components/Account/AccountFromToken"
-import {Button, Layout, Select, Spin, Tooltip, Typography} from 'antd';
+import {Button, Layout, Select, Spin, Tooltip, Typography, Upload} from 'antd';
+import {UploadOutlined} from '@ant-design/icons';
 import './App.css';
 import LinkMenu from "./components/linkMenu";
 import SignOut from "./components/SignOut";
@@ -20,7 +21,6 @@ import VideoRoom from "./components/VideoChat/VideoRoom"
 import SlackToVideo from "./components/Slack/slackToVideo"
 
 import {withAuthentication} from "./components/Session";
-import {withProgram} from "./components/Program"
 
 import LiveVideosArea from "./components/LiveStreaming";
 import Exhibits from "./components/Exhibits";
@@ -34,6 +34,8 @@ import VideoChat from "./components/VideoChat";
 // import UsersList from "./components/Admin/Users";
 //
 import Registrations from "./components/Admin/Registrations";
+import Configuration from "./components/Admin/Config";
+import Clowdr from "./components/Admin/Clowdr";
 import ProgramSummary from "./components/Admin/Program/ProgramSummary";
 import Rooms from "./components/Admin/Program/Rooms";
 import Tracks from "./components/Admin/Program/Tracks";
@@ -51,6 +53,8 @@ import SidebarChat from "./components/SocialTab/SidebarChat";
 import {withRouter} from "react-router";
 import BottomChat from "./components/SocialTab/BottomChat";
 import ProgramItem from "./components/ProgramItem";
+import UserStatusDisplay from "./components/Lobby/UserStatusDisplay";
+import UsersList from "./components/Admin/Users";
 
 
 Parse.initialize(process.env.REACT_APP_PARSE_APP_ID, process.env.REACT_APP_PARSE_JS_KEY);
@@ -66,20 +70,60 @@ class App extends Component {
         // if(this.props.match.)
         this.state = {
             conference: null,
-            showingLanding: this.props.authContext.showingLanding,
+            showingLanding: this.props.clowdrAppState.showingLanding,
             socialCollapsed: false,
-            chatCollapsed: false
+            chatCollapsed: false,
+            dirty: false
         }
 
-        if(window.location.pathname.startsWith("/fromSlack") &&!this.props.authContext.user){
+        if(window.location.pathname.startsWith("/fromSlack") &&!this.props.clowdrAppState.user){
             this.state.isMagicLogin = true;
         }
+    }
+
+    dirty() {
+        this.setState({dirty: !this.state.dirty})
     }
 
     isSlackAuthOnly() {
         if(!this.state.conference)
             return true;
         return !this.state.conference.get("isIncludeAllFeatures");
+    }
+
+    onLogoUpload(file) {
+        const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+        if (!isJpgOrPng) {
+            message.error('You can only upload JPG/PNG file!');
+            return false;
+        }
+        const isLt2M = file.size / 1024 / 1024 < 2;
+        if (!isLt2M) {
+            message.error('Image must be smaller than 2MB!');
+            return false;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const data = {
+                content: reader.result,
+                conferenceId: this.props.clowdrAppState.currentConference.id
+            };
+
+            Parse.Cloud.run("logo-upload", data).then(async (res) => {
+                message.info("Success! Your logo has been uploaded.");
+                let updatedItemQ = new Parse.Query("ClowdrInstance");
+                let updatedItem = await updatedItemQ.get(this.props.clowdrAppState.currentConference.id);
+
+                this.props.clowdrAppState.currentConference.set("headerImage", updatedItem.get("headerImage")); //well that is gross
+                console.log(res);
+                console.log('[App]: Logo uploaded successfully');
+                this.dirty();
+            });
+        }
+        reader.readAsDataURL(file);
+        return false;
+
     }
 
     siteHeader() {
@@ -90,20 +134,20 @@ class App extends Component {
             let headerText = this.state.conference.get("headerText");
             let confSwitcher;
             let clowdrActionButtons;
-            if(this.props.authContext.validConferences && this.props.authContext.validConferences.length > 1 && this.isSlackAuthOnly()){
+            if(this.props.clowdrAppState.validConferences && this.props.clowdrAppState.validConferences.length > 1 && this.isSlackAuthOnly()){
                 confSwitcher = <Select
                                        placeholder="Change conference"
                                        onChange={(conf)=>{
                                            console.log(conf);
-                    this.props.authContext.helpers.setActiveConference(this.props.authContext.validConferences[conf]);
+                    this.props.clowdrAppState.helpers.setActiveConference(this.props.clowdrAppState.validConferences[conf]);
                 }}>
                     {
-                        this.props.authContext.validConferences.map((conf,i)=>
+                        this.props.clowdrAppState.validConferences.map((conf,i)=>
                             <Select.Option key={i}>{conf.get("conferenceName")}</Select.Option>)
                     }
                 </Select>
                 clowdrActionButtons = <span>
-                {(this.props.authContext.user && this.props.authContext.permissions.includes("moderator") ? <NavLink to="/moderation"><Button size="small">Moderation</Button></NavLink> : <></>)}
+                {(this.props.clowdrAppState.user && this.props.clowdrAppState.permissions.includes("moderator") ? <NavLink to="/moderation"><Button size="small">Moderation</Button></NavLink> : <></>)}
                     <Tooltip mouseEnterDelay={0.5} title="CLOWDR Support"><NavLink to="/help"><Button size="small">Help</Button></NavLink></Tooltip>
                 <Tooltip mouseEnterDelay={0.5} title="About CLOWDR"><NavLink to="/about"><Button size="small">About</Button></NavLink></Tooltip>
                 <NavLink to="/signout"><Button size="small">Sign Out</Button></NavLink>
@@ -115,20 +159,40 @@ class App extends Component {
             }
             else
                 confSwitcher= <span style={{float: "right"}}>{clowdrActionButtons}</span>;
-            if (headerImage)
-                return <Header className="site-layout-background" style={{height: "90px", clear: "both"}}>
-                    <img src={headerImage.url()} className="App-logo" height="90"
-                         alt="logo"/><span style={{paddingLeft: "20px"}}><Typography.Title
-                    style={{display: "inherit"}}>{headerText}</Typography.Title>{confSwitcher}</span>
-                </Header>
+
+            if (headerImage) {
+                let logo = ""
+                if (this.props.clowdrAppState.user && this.props.clowdrAppState.isAdmin) {
+                    logo = <Upload accept=".png, .jpg" name='logo' beforeUpload={this.onLogoUpload.bind(this)} fileList={[]}>
+                               <img src={headerImage.url()} className="App-logo" height="75" alt="logo" title="Click to replace logo"/> 
+                           </Upload>
+                }
+                else
+                    logo = <img src={headerImage.url()} className="App-logo" height="75" alt="logo"/> 
+    
+                return <table className="site-layout-background" style={{height: "75px", clear: "both"}}>
+                        <tbody><tr>
+                        <td>{logo}</td>
+                        <td><Typography.Title style={{display: "inherit"}}>{headerText}</Typography.Title></td><td>{confSwitcher}</td>
+                        </tr></tbody></table>
+            }
             else if (headerText) {
-                return <Header className="site-layout-background" style={{height: "140px", clear: "both"}}>
-                    <Typography.Title>{headerText}</Typography.Title>{confSwitcher}
-                </Header>
+                let logo = "";
+                if (this.props.clowdrAppState.user && this.props.clowdrAppState.isAdmin) {
+                    logo = <Upload accept=".png, .jpg" name='logo' beforeUpload={this.onLogoUpload.bind(this)} fileList={[]}>
+                                    <Button type="primary" size="small" title="Upload conference logo">
+                                        <UploadOutlined />
+                                    </Button>
+                            </Upload>
+                }
+                return <table className="site-layout-background" style={{height: "75px", clear: "both"}}>
+                        <tbody><tr>
+                            <td>{logo}</td><td><Typography.Title style={{display: 'inherit'}}>{headerText}</Typography.Title></td><td>{confSwitcher}</td>
+                        </tr></tbody></table>
             } else
-                return <Header className="site-layout-background" style={{clear:'both' }}>
+                return <div className="site-layout-background" style={{clear:'both' }}>
                    <div style={{float:'left'}}><Typography.Title>
-                       {this.state.conference.get('conferenceName')} Group Video Chat</Typography.Title></div>{confSwitcher}</Header>
+                       {this.state.conference.get('conferenceName')} Group Video Chat</Typography.Title></div>{confSwitcher}</div>
         }
     }
 
@@ -141,26 +205,26 @@ class App extends Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (!prevProps.authContext || prevProps.authContext.currentConference != this.props.authContext.currentConference) {
+        if (!prevProps.clowdrAppState || prevProps.clowdrAppState.currentConference != this.props.clowdrAppState.currentConference) {
             this.refreshConferenceInformation();
         }
-        if (this.props.authContext.showingLanding != this.state.showingLanding) {
-            this.setState({showingLanding: this.props.authContext.showingLanding});
+        if (this.props.clowdrAppState.showingLanding != this.state.showingLanding) {
+            this.setState({showingLanding: this.props.clowdrAppState.showingLanding});
         }
-        if (this.state.isMagicLogin && (!window.location.pathname.startsWith("/fromSlack") || this.props.authContext.user)) {
+        if (this.state.isMagicLogin && (!window.location.pathname.startsWith("/fromSlack") || this.props.clowdrAppState.user)) {
             this.setState({isMagicLogin: false});
         }
     }
 
     componentDidMount() {
-        if (this.props.authContext.currentConference)
+        if (this.props.clowdrAppState.currentConference)
             this.refreshConferenceInformation();
-        this.props.authContext.history = this.props.history;
+        this.props.clowdrAppState.history = this.props.history;
 
     }
 
     refreshConferenceInformation() {
-        this.setState({conference: this.props.authContext.currentConference});
+        this.setState({conference: this.props.clowdrAppState.currentConference});
     }
 
     routes() {
@@ -191,6 +255,7 @@ class App extends Component {
         return (<div>
             {baseRoutes}
             <Route exact path="/" component={Home}/>
+            <Route exact path="/breakoutRoom/:programConfKey1/:programConfKey2" component={ProgramItem}/>
             <Route exact path="/program/:programConfKey1/:programConfKey2" component={ProgramItem}/>
             <Route exact path="/live/:when/:roomName?" component={LiveVideosArea}/>
 
@@ -219,8 +284,10 @@ class App extends Component {
             <Route exact path="/admin" component={(props)=><SignIn {...props} dontBounce={true}/>} />
 
             {/*<Route exact path='/admin/schedule' component={withAuthentication(ScheduleList)} />*/}
-            {/*<Route exact path='/admin/users' component={withAuthentication(UsersList)} />*/}
+            <Route exact path='/admin/users' component={UsersList} />
             {/*<Route exact path='/admin/users/edit/:userID' component={withAuthentication(EditUser)} />*/}
+            <Route exact path='/admin/clowdr' component={Clowdr}/>
+            <Route exact path='/admin/configuration' component={Configuration}/>
             <Route exact path='/admin/registrations' component={Registrations}/>
             <Route exact path='/admin/program/rooms' component={Rooms}/>
             <Route exact path='/admin/program/tracks' component={Tracks}/>
@@ -264,7 +331,7 @@ class App extends Component {
             }
         }
 
-        let isLoggedIn = this.props.authContext.user != null;
+        let isLoggedIn = this.props.clowdrAppState.user != null;
         return (
                 <div className="App">
                     <div>
@@ -274,8 +341,8 @@ class App extends Component {
                             {this.navBar()}
                         {/*<Header className="action-bar">*/}
                         {/*    /!*<Badge*!/*/}
-                        {/*    /!*    title={this.props.authContext.liveVideoRoomMembers + " user"+(this.props.authContext.liveVideoRoomMembers == 1 ? " is" : "s are")+" in video chats"}*!/*/}
-                        {/*    /!*    showZero={true} style={{backgroundColor: '#52c41a'}} count={this.props.authContext.liveVideoRoomMembers} offset={[0,-5]}>*!/*/}
+                        {/*    /!*    title={this.props.clowdrAppState.liveVideoRoomMembers + " user"+(this.props.clowdrAppState.liveVideoRoomMembers == 1 ? " is" : "s are")+" in video chats"}*!/*/}
+                        {/*    /!*    showZero={true} style={{backgroundColor: '#52c41a'}} count={this.props.clowdrAppState.liveVideoRoomMembers} offset={[0,-5]}>*!/*/}
                         {/*    <Button style={lobbySiderButtonStyle} onClick={this.toggleLobbySider.bind(this)} size="small" >Breakout Rooms <RightOutlined /></Button>*/}
                         {/*    <Button style={chatSiderButtonStyle} onClick={this.toggleChatSider.bind(this)} size="small" >Chat</Button>*/}
 
@@ -337,9 +404,9 @@ class ClowdrApp extends React.Component{
            <BrowserDetection>
                {this.browserHandler}
            </BrowserDetection>
-               <RouteredApp authContext={this.props.authContext} />
+               <RouteredApp clowdrAppState={this.props.clowdrAppState} />
        </BrowserRouter>
    }
 }
 
-export default withProgram(withAuthentication(ClowdrApp));
+export default withAuthentication(ClowdrApp);

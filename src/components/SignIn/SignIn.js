@@ -46,7 +46,7 @@ class SignIn extends Component {
         // event.preventDefault();
         try{
             let user = await Parse.User.logIn(email, password);
-            console.log(user)
+            console.log("[SignIn]: User=" + JSON.stringify(user));
             await this.props.refreshUser();
             this.props.history.push("/");
             window.location.reload(false);
@@ -59,7 +59,7 @@ class SignIn extends Component {
 
     componentDidMount() {
         if (process.env.REACT_APP_IS_MINIMAL_UI && !this.props.dontBounce) {
-            this.props.authContext.helpers.setGlobalState({showingLanding: true});
+            this.props.clowdrAppState.helpers.setGlobalState({showingLanding: true});
         }
     }
 
@@ -71,7 +71,7 @@ class SignIn extends Component {
         console.log(process.env)
         let res = await Parse.Cloud.run("reset-password", {
             email: this.state.email,
-            confID: process.env.REACT_APP_DEFAULT_CONFERENCE
+            confID: this.props.clowdrAppState.helpers.getDefaultConferenceName()
         });
         if(res.status == "error")
             message.error(res.message);
@@ -120,7 +120,7 @@ class SignIn extends Component {
 const AuthConsumer = (props)=>(
     <AuthUserContext.Consumer>
         {value => (
-            <SignIn {...props} user={value.user} authContext={value} refreshUser={value.refreshUser}/>
+            <SignIn {...props} user={value.user} clowdrAppState={value} refreshUser={value.refreshUser}/>
         )}
     </AuthUserContext.Consumer>
 );

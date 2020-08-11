@@ -5,6 +5,7 @@ import {
     AuthUserContext,
 } from './Session';
 import {
+    AppstoreOutlined,
     BankOutlined,
     BarsOutlined,
     BorderOutlined,
@@ -14,13 +15,18 @@ import {
     DesktopOutlined,
     IdcardOutlined,
     HomeOutlined,
+    PlusSquareTwoTone,
     ReadOutlined,
     SmileOutlined,
     ScheduleOutlined,
+    SlidersOutlined,
     SolutionOutlined,
+    SwitcherTwoTone,
     SyncOutlined,
     TeamOutlined,
     ToolOutlined,
+    ToolTwoTone,
+    UnorderedListOutlined,
     UserOutlined,
     VideoCameraAddOutlined,
     VideoCameraOutlined,
@@ -30,21 +36,36 @@ import {
 } from '@ant-design/icons';
 import SubMenu from "antd/es/menu/SubMenu";
 import {withRouter} from "react-router";
+import {ProgramContext} from "./Program";
+
 
 class LinkMenu extends React.Component {
 
     constructor(props) {
         super(props);
+        this.state = {
+            ProgramTracks: []
+        }
     }
 
     componentDidMount() {
+        this.props.clowdrAppState.programCache.getProgramTracks(this).then(tracks => {
+            this.setState({ProgramTracks: tracks});
+        })
+    }
+    componentWillUnmount() {
+        this.props.clowdrAppState.programCache.cancelSubscription("ProgramTrack", this);
     }
 
     render() {
         let userTools = [];
         let adminTools = "";
-        if (this.props.authContext.user) {
-            if(this.props.authContext.isAdmin) {
+        if (this.props.clowdrAppState.user) {
+            if(this.props.clowdrAppState.isAdmin) {
+                let newConfOption = ""
+                if (this.props.clowdrAppState.isClowdrAdmin)
+                    newConfOption = <Menu.Item key="/admin/clowdr" icon={<ToolTwoTone twoToneColor="red" />}><NavLink to="/admin/clowdr">CLOWDR</NavLink></Menu.Item>
+    
                 adminTools = <SubMenu key="/admin" title={<span><ToolOutlined/><span>Administration</span></span>}>
                     <Menu.Item key='/admin/program/rooms' icon={<BankOutlined/>}><NavLink to="/admin/program/rooms">
                         Virtual Rooms</NavLink></Menu.Item>
@@ -67,8 +88,13 @@ class LinkMenu extends React.Component {
                     <Menu.Item key='/admin/users' icon={<UserOutlined/>}><NavLink to="/admin/users">
                     Users</NavLink></Menu.Item>
 
+                    <Menu.Item key='/admin/configuration' icon={<SlidersOutlined/>}><NavLink to="/admin/configuration">
+                        Conference Configuration</NavLink></Menu.Item>
+
+                    {newConfOption}
                 </SubMenu>
             }
+
             userTools =
                 [
                     <Menu.Item key='/program' icon={<ScheduleOutlined />}><NavLink to="/program">Program</NavLink></Menu.Item>,
@@ -79,24 +105,25 @@ class LinkMenu extends React.Component {
                     </SubMenu>,
 
                     <SubMenu key="/exhibits" title={<span><TeamOutlined/><span>Exhibit Hall</span></span>}>
-                        <Menu.Item key='/exhibits/research-papers' icon={<ReadOutlined/>}><NavLink to="/exhibits/icse-2020-papers/list">Research Papers</NavLink></Menu.Item>
-                        <Menu.Item key='/exhibits/nier' icon={<ReadOutlined/>}><NavLink to="/exhibits/icse-2020-New-Ideas-and-Emerging-Results/list">NIER</NavLink></Menu.Item>
-                        <Menu.Item key='/exhibits/jf' icon={<ReadOutlined/>}><NavLink to="/exhibits/icse-2020-Journal-First/list">Journal First</NavLink></Menu.Item>
-                        <Menu.Item key='/exhibits/seet' icon={<ReadOutlined/>}><NavLink to="/exhibits/icse-2020-Software-Engineering-Education-and-Training/list">SEET</NavLink></Menu.Item>
-                        <Menu.Item key='/exhibits/seip' icon={<ReadOutlined/>}><NavLink to="/exhibits/icse-2020-Software-Engineering-in-Practice/list">SEIP</NavLink></Menu.Item>
-                        <Menu.Item key='/exhibits/seis' icon={<ReadOutlined/>}><NavLink to="/exhibits/icse-2020-Software-Engineering-in-Society/list">SEIS</NavLink></Menu.Item>
-                        <Menu.Item key='/exhibits/demos' icon={<DesktopOutlined/>}><NavLink to="/exhibits/Demonstrations/grid">Demos</NavLink></Menu.Item>
-                        <Menu.Item key='/exhibits/icse-2020-poster' icon={<BorderOutlined/>}><NavLink to="/exhibits/icse-2020-poster/grid">Posters</NavLink></Menu.Item>
-                        <Menu.Item key='/exhibits/src-posters' icon={<BorderOutlined/>}><NavLink to="/exhibits/icse-2020-ACM-Student-Research-Competition/grid">SRC Posters</NavLink></Menu.Item>
+                        {this.state.ProgramTracks
+                        .filter(track => track.get("exhibit") == "Grid" || track.get("exhibit") == "List")
+                        .map(track => {
+                            let mode = track.get("exhibit").toLowerCase();
+                            let path = track.get("name");
+                            let displayName = track.get("displayName");
+                            let icon = mode == "list" ? <UnorderedListOutlined/> : <AppstoreOutlined/>;
+                        return <Menu.Item key={`/exhibits/${path}`} icon={icon}> <NavLink to={`/exhibits/${path}/${mode}`}>{displayName}</NavLink></Menu.Item>
+
+                        })}
                     </SubMenu>,
 
-                    <Menu.Item key='/lobby' icon={<WechatOutlined/>}><NavLink to="/lobby">Video Chat Lobby</NavLink></Menu.Item>,
+                    <Menu.Item key='/lobby' icon={<WechatOutlined/>}><NavLink to="/lobby">People</NavLink></Menu.Item>,
 
                     <Menu.Item key='/account' icon={<UserOutlined/>}><NavLink to="/account">My Account</NavLink></Menu.Item>,
 
                     <SubMenu key="conf-select" title="Select Conference">
                         {
-                            this.props.authContext.validConferences.map((conf)=><Menu.Item key={conf.id} onClick={this.props.authContext.helpers.setActiveConference.bind(this,conf)}>{conf.get("conferenceName")}</Menu.Item>)
+                            this.props.clowdrAppState.validConferences.map((conf)=><Menu.Item key={conf.id} onClick={this.props.clowdrAppState.helpers.setActiveConference.bind(this,conf)}>{conf.get("conferenceName")}</Menu.Item>)
                         }
                     </SubMenu>
                     ];
@@ -121,12 +148,13 @@ class LinkMenu extends React.Component {
     }
 }
 let RouteredMenu = withRouter(LinkMenu);
-const MenuWithAuth = () => (
-    <AuthUserContext.Consumer>
-        {value => (
-            <RouteredMenu authContext={value} />
-        )}
-    </AuthUserContext.Consumer>
+const MenuWithAuth = (props) => (
+            <AuthUserContext.Consumer>
+                {value => (
+                    <RouteredMenu {...props} clowdrAppState={value}  />
+                )}
+            </AuthUserContext.Consumer>
+
 );
 
 export default withRouter(MenuWithAuth);

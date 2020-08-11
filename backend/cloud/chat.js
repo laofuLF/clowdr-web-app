@@ -22,7 +22,7 @@ async function getConfig(conference){
     config.twilioChat = config.twilio.chat.services(config.TWILIO_CHAT_SERVICE_SID);
 
     if (!config.TWILIO_CALLBACK_URL) {
-        config.TWILIO_CALLBACK_URL = "https://clowdr.herokuapp.com/twilio/event"
+        config.TWILIO_CALLBACK_URL = "http://localhost:3000/twilio/event"
     }
     if(!config.TWILIO_CHAT_CHANNEL_MANAGER_ROLE){
         let role = await config.twilioChat.roles.create({
@@ -208,7 +208,7 @@ Parse.Cloud.define("chat-getBreakoutRoom", async (request) => {
     if(profile) {
         let config = await getConfig(conf);
         let originalChannel = await config.twilioChat.channels(sid).fetch();
-        if (originalChannel.attributes.category == 'programItem') {
+        if (originalChannel.attributes && originalChannel.attributes.category == 'programItem') {
             return {
                 status: "ok",
                 room: originalChannel.attributes.breakoutRoom
@@ -316,7 +316,7 @@ Parse.Cloud.define("chat-getBreakoutRoom", async (request) => {
                 parseRoom.set("title", roomName);
                 parseRoom.set("conference", conf);
                 parseRoom.set("twilioID", twilioRoom.sid);
-                parseRoom.set("isPrivate", true);
+                parseRoom.set("isPrivate", false);
                 parseRoom.set("persistence", persistence);
                 parseRoom.set("mode", mode);
                 parseRoom.set("capacity", maxParticipants);
@@ -512,7 +512,7 @@ Parse.Cloud.define("join-announcements-channel", async (request) => {
     userQ.equalTo("conference", conf);
 
     let profile = await userQ.first({useMasterKey: true});
-    if(profile){
+    if (profile){
         let config = await getConfig(conf);
 
         //Now find out if we are a moderator or not...
@@ -522,6 +522,8 @@ Parse.Cloud.define("join-announcements-channel", async (request) => {
         actionQ.equalTo("action","announcement-global");
         accesToConf.matchesQuery("action", actionQ);
         const hasAccess = await accesToConf.first({sessionToken: request.user.getSessionToken()});
+        console.log('--> hasAccess: ' + hasAccess);
+
         let role = config.TWILIO_CHAT_CHANNEL_OBSERVER_ROLE;
         if (hasAccess) {
             role = config.TWILIO_CHAT_CHANNEL_MANAGER_ROLE;
@@ -549,7 +551,27 @@ Parse.Cloud.define("join-announcements-channel", async (request) => {
     return null;
 
 });
+
+async function userInRoles(user, allowedRoles) {
+    const roles = await new Parse.Query(Parse.Role).equalTo('users', user).find();
+    return roles.find(r => allowedRoles.find(allowed => r.get("name") == allowed));
+}
+
 Parse.Cloud.define("chat-destroy", async (request) => {
+    let confID = request.params.conference;
+    let sid = request.params.sid;
+    try {
+        if (!await userInRoles(request.user, [confID + "-moderator", confID + "-admin", confID + "-manager"])) {
+            throw "You are not permitted to delete this chat";
+        }
+        let conf = new ClowdrInstance();
+        conf.id = confID;
+        let config = await getConfig(conf);
+        await config.twilioChat.channels(sid).remove();
+        return {status: "OK"}
+    } catch (err) {
+        console.log(err);
+    }
 
 });
 Parse.Cloud.define("chat-createDM", async (request) => {
