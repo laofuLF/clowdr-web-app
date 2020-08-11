@@ -203,7 +203,7 @@ class SidebarChat extends React.Component {
                 cancelText="No"
             ><a href="#"><CloseOutlined style={{color: "red"}}/></a></Popconfirm>)
         if(options.length > 0)
-         return <Popover  key={m.sid} mouseEnterDelay={0.5} placement="topRight" content={<div style={{backgroundColor:"white"}}>
+         return <Popover  key={m.sid} mouseEnterDelay={0.5} placement="topRight" content={<div>
             {options}
         </div>}><div ref={(el) => { this.messagesEnd = el; }} className="chatMessage"><ReactMarkdown source={m.body} renderers={{ text: emojiSupport, link:linkRenderer}} /></div>
         </Popover>

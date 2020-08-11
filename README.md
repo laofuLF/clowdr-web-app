@@ -1,10 +1,28 @@
 # Clowdr
+Clowdr is an open source tool suite to make it easier to run interactive and engaging virtual conferences. Imagine that your conference attendees could video and text chat with each other and easily drift between different conversations in different rooms. Now imagine that this app also integrated your conference program (directly imported from conf.researchr.org), and let attendees see who else is watching the same content. We were unable to find a technology platform that allowed for these interactions, so we built Clowdr.
 
-Clowdr is a virtual conference platform project bootstrapped with [Create React App](https://github.com/facebook/create-react-app) and Node.js.
+This repository contains the source code for the Clowdr web app.
 
-If you want to run it, and help develop, we highly recommend you do it from a Linux environment. The instructions below assume so. If you are on Windows, install [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10), and run everything from there.
+# Information for Conference Participants
+
+See the [User
+Manual](https://docs.google.com/document/d/1S-pNNqjA4RjQ8fn2i1Z2998VFn9bSwV4adOTpHw0BIo/edit#heading=h.dhd7xqg6t0qm)
+for instructions on how to use Clowdr as a conference participant.
+
+# Information for Conference Organizers
+This repository contains the source code for Clowdr. If you are interested
+in using Clowdr for your event, there is no need for you to download any
+code or run your own server (unless you want to!). We can host your backend
+server for free; the only costs to your conference are for streaming video (you'll need accounts with Zoom and Twilio). Clowdr has been battle-tested by thousands of users already this year at [PLDI](https://pldi20.sigplan.org/), [ICSE](https://2020.icse-conferences.org/) and [ISSTA](https://conf.researchr.org/home/issta-2020). In August, [VL/HCC](https://conf.researchr.org/home/vlhcc2020) and [ICFP](https://icfp20.sigplan.org/) plan to use Clowdr. As we gain deployment experience, we hope to offer conference organizers a one-click installation of Clowdr. However, in the meantime, if you are considering Clowdr for your virtual conference, please email us at [hello@clowdr.org](mailto:hello@clowdr.org) and we can provide a demo and deployment for your conference.
+Please see the [Operator's
+Manual](https://docs.google.com/document/d/1-9Rbt3KnPYUTO2cz-rAPhczw8pkozbWMaBGzfPAT5Lo)
+for answers to frequently asked questions about running Clowdr.
+
+# Information for Developers
 
 ## Installation
+
+If you want to run Clowdr locally (e.g., to help develop it), we highly recommend you do it from a Mac or Linux environment. The instructions below assume so. If you are on Windows, install [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10), and run everything from there.
 
 ### Install all dependencies
 
@@ -12,6 +30,12 @@ Use npm to install (or upgrade) all dependencies after cloning.
 
 ```bash
 $ npm install
+```
+
+@Jon/@Crista: And maybe we need something like this (and maybe a few more dependencies)... Or does doing this once mean that the dependencies get listed somewhere so that people in the future just need "npm install"??
+```bash
+$ npm install --save typescript @types/node @types/react @types/react-dom
+@types/jest @types/parse
 ```
 
 ### Set Up a Backend
@@ -37,7 +61,7 @@ this:
 
 Use XXX as the MONGODB_PASSWORD, YYY as MONGODB_DB.
 
-BCP: Some Instructions about the MONGODB_HOST var would be useful
+@Jon/@Crista: Some Instructions about the MONGODB_HOST var would be useful
 
 ### Populate the Database
 
@@ -49,7 +73,7 @@ $ npm run init-app
 
 After this command runs, you should be able to see all tables with some essential data stored in the database in Back4App.
 
-BCP: Pressing tab in my browser (safari) selected the URL bar at the top!
+@Jon/@Crista: Pressing tab in my browser (safari) selected the URL bar at the top!
 right arrow might have worked.
 
 Select the `InstanceConfiguration` table, and click on the security icon on the top-right (a shield-like icon). Double check that Public read and write are unchecked, then add the role name `ClowdrSysAdmin` (press the tab key after typing this word), and check both Read and Write permissions for this role. Click save.
@@ -70,6 +94,18 @@ name you give it, `YOUR_APP_NAME` matches the environment variable
 Go to Cloud Code (also called "Cloud Code Functions") in your Back4App
 workspace, upload all files with .js extension under backend/cloud, and click "deploy".
 
+#### Developing and Debugging Cloud Functions
+It's *much* easier to debug and develop cloud functions by running a local parse server, so that changes to cloud code just require restarting your local server. I don't know how to make it work with live query or with uploaded files - this should be doable, but I haven't found the magic strings yet. However, this is sufficient for testing cloud functions that don't involve files.
+
+To run a local parse server:
+
+1. Install the correct version of parse-server (we are currently on 3.9.0): `npm install -g parse-server@3.9.0
+`
+2. Run `npm install` in the `backend/cloud` directory
+3. Start the server, using the same keys that you would otherwise use on Back4App. Get the correct keys by logging into your Back4App console, then got to "Server Settings" -> "Core Settings." Copy and paste the app id, client key, master key, database URI and javascript key: `parse-server --appId <appID> --clientKey <clientKey> --masterKey <masterKey> --databaseURI <mongoDB URI>  --javascriptKey <javascriptKey> --cloud /path/to/backend/cloud/main.js`
+4. In your `.env.development` set `REACT_APP_PARSE_DATABASE_URL=http://localhost:1337/parse`, then do `npm start` to start the frontend.
+5. As you change your cloud functions, stop (control-C) and restart the parse server.
+
 ## Usage and Further Configuration
 
 After the installation, start the application by executing
@@ -82,7 +118,12 @@ This will pop up a tab in your default browser and from there you can log into t
 
 `clowdr@localhost / admin`
 
-BCP: Should we mention that it will come up looking like ICSE?
+@Jon/@Crista: Should we mention that it will come up looking like ICSE?
+
+### Set up Zoom for your test conference
+To use zoom embedding, you need to create a JWT app on Zoom, and set the instance
+configuration variables `ZOOM_API_KEY` and `ZOOM_API_SECRET` with the values from
+Zoom.
 
 ### Set up Twilio for your test conference
 
@@ -90,7 +131,7 @@ Clowdr uses Twilio as the text and video chat service. Please go to
 [Twilio](https://www.twilio.com/),  create an account there, and create an
 API key/secret. (Select API Keys on the left under settings.)
 
-BCP: What friendly name?
+@Jon/@Crista: What friendly name?
 
 Once you login into Clowdr with the admin account, go to Administration->Conference Configuration to enter the Twilio credentials for chat. You must enter, at least the following configuration variables:
 
@@ -99,6 +140,7 @@ Once you login into Clowdr with the admin account, go to Administration->Confere
 | `TWILIO_ACCOUNT_SID` | [Your primary Twilio account identifier](https://www.twilio.com/console).|
 |`TWILIO_API_KEY` | [Used to authenticate](https://www.twilio.com/console/dev-tools/api-keys).|
 |`TWILIO_API_SECRET` | [Used to authenticate](https://www.twilio.com/console/dev-tools/api-keys).|
+|`TWILIO_AUTH_TOKEN`|[Used to authenticate](https://www.twilio.com/console/dev-tools/api-keys).|
 |`TWILIO_CHAT_SERVICE_SID` | [Chat](https://www.twilio.com/console/chat/services)|
 |`FRONTEND_URL` | http://localhost:3000, for development|
 
@@ -106,7 +148,7 @@ Once you login into Clowdr with the admin account, go to Administration->Confere
 
 ### Set up email (Sendgrid) for your test conference
 
-Clowdr uses Sendgrid to deliver emails to conference participants. Please go to [Sendgrid](https://sendgrid.com/), create an account there, and create a Web API, and a key for it. Make sure to set up a verified sender address (or domain), for example <you>+clowdr@gmail.com or any other email address that is yours and that will be used as the sender of your Clowdr installation's emails. Sendgrid will ask you to verify it before you can send emails via their API.
+Clowdr uses Sendgrid to deliver emails to conference participants. Please go to [Sendgrid](https://sendgrid.com/), create an account there, and create a Web API, and a key for it. Make sure to set up a verified sender address (or domain), for example you+clowdr@gmail.com or any other email address that is yours and that will be used as the sender of your Clowdr installation's emails. Sendgrid will ask you to verify it before you can send emails via their API.
 
 Then add the following additional configuration variables in Clowdr:
 
@@ -127,7 +169,7 @@ right side, both related to text and video chat.
 
 Setup complete!!
 
-## Contributing
+# Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Join us on the Slack [CLOWDR](clowdr.slack.com) workspace!
