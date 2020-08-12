@@ -25,6 +25,7 @@ function groupBy(list, keyGetter) {
 class Program extends React.Component {
     constructor(props) {
         super(props);
+        console.log("program props are: " + this.props);
         this.state = {
             ProgramSessions: [],
             loading: true,
