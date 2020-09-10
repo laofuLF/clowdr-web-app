@@ -58,7 +58,6 @@ interface State {
     flairColors: Record<string, FlairUIData>;
     allFlair: AllFlairData[];  // TS: Call it allFlairs??
     validConferences: Array<ClowdrInstance>;
-    theme: string | null;
 }
 
 type RoomID = string    // TS: Doesn't belong here?
@@ -190,7 +189,6 @@ const withClowdrState = (Component: React.Component<Props, State>) => {
                 flairColors: {},
                 allFlair: [],
                 validConferences: [],
-                theme: window.localStorage.getItem("theme") === "0" ? "light" : window.localStorage.getItem("theme"),
             };
         }
 

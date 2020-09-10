@@ -26,7 +26,6 @@ class EmojiPickerPopover extends React.Component<EmojiPickerPopoverProps, EmojiP
         return <div id="messageReactionPicker" style={{ top: "10px", display: "none" }} ref={this.pickerRef}>
             {this.state.theme === 'dark' ? <Picker set='google' theme='dark' onSelect={this.props.appState?.chatClient.emojiSelected.bind(this.props.appState?.chatClient)} title="Pick a reaction" /> :
                 <Picker set='google' theme='light' onSelect={this.props.appState?.chatClient.emojiSelected.bind(this.props.appState?.chatClient)} title="Pick a reaction" />}
-            {/*<Picker set='google' theme='light' onSelect={this.props.appState?.chatClient.emojiSelected.bind(this.props.appState?.chatClient)} title="Pick a reaction" />*/}
         </div>
     }
 }
