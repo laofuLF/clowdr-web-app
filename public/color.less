@@ -126,6 +126,9 @@
 @secondary-color: @primary-color;
 @btn-primary-bg: @primary-color;
 html {-webkit-tap-highlight-color: rgba(0, 0, 0, 0);}
+.chatMessage :hover {
+  background-color: @item-hover-bg;
+}
 body {color: @text-color;background-color: @body-background;}
 h1,
 h2,
@@ -872,6 +875,7 @@ tr > .ant-picker-cell-in-view.ant-picker-cell-range-hover-start:last-child::afte
 .ant-layout-sider-light .ant-layout-sider-trigger {color: @text-color;background: #fff;}
 .ant-layout-sider-light .ant-layout-sider-zero-width-trigger {color: @text-color;background: #fff;}
 .ant-list {color: @text-color;}
+.ant-list-item {color: @text-color;}
 .ant-list-empty-text {color: @disabled-color;}
 .ant-list-item-content {color: @text-color;}
 .ant-list-item-meta-title {color: @text-color;}
