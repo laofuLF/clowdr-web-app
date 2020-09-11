@@ -5,7 +5,7 @@ import { ClowdrState } from "../../ClowdrTypes";
 
 interface EmojiPickerPopoverProps {
     appState: ClowdrState | null;
-    theme: any;
+    theme: string | null;
 }
 interface EmojiPickerPopoverState {
     theme: string | null;
