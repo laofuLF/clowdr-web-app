@@ -55,6 +55,7 @@ class LinkMenu extends React.Component {
         window.localStorage.setItem("theme", this.state.theme);
         window.less.modifyVars(this.state.theme === "light" ? lightVars : darkVars).then(() => {
             console.log('theme changed successfully')
+            this.props.isChanged({theme: this.state.theme});
         }).catch(() => {
             console.log('theme changed error')
         })
