@@ -514,7 +514,7 @@ div.availabilityOptionsOpen span.availabilityOption {
 
 .chatIdentitySidebar {
     color: black;
-    /*background-color: #d6e4ff;*/
+    background-color: #d6e4ff;
 }
 
 .chatButtonCollapsed {
@@ -627,7 +627,7 @@ div.availabilityOptionsOpen span.availabilityOption {
 }
 
 .bottomChatIdentity {
-    /*background-color: #d6e4ff;*/
+    background-color: #d6e4ff;
     color: black;
     padding-left: 2px;
     flex-grow: 2;
@@ -698,7 +698,7 @@ td.ant-table-cell.program-table-programItem {
 
 #sidepopoutcontainer .social-sidebar-divider {
     margin: 0;
-    /*background-color: #d6e4ff;*/
+    background-color: #d6e4ff;
     border: 0;
 }
 
@@ -708,7 +708,7 @@ td.ant-table-cell.program-table-programItem {
 
 .social-sidebar-divider {
     margin: 0;
-    /*background-color: #d6e4ff;*/
+    background-color: #d6e4ff;
     border: 0;
 }
 
@@ -717,7 +717,7 @@ td.ant-table-cell.program-table-programItem {
 }
 
 .social-sidebar-divider .ant-divider-inner-text {
-    color: black;
+    /*color: black;*/
 }
 
 .sidebar-section-separator {
@@ -861,7 +861,7 @@ span.ant-divider-inner-text {
 }
 
 .multiChatWindowHeader button.ant-btn-primary {
-    /*background-color: #d6e4ff;*/
+    background-color: #d6e4ff;
     text-shadow: none;
     border: none;
     /*color: black;*/
@@ -875,8 +875,8 @@ span.ant-divider-inner-text {
 
 .multiChatWindowHeader {
     /* background-color: #1890FF; */
-    /*background-color: #d6e4ff;*/
-    /*color: black;*/
+    background-color: #d6e4ff;
+    color: black;
     /* font-weight: bold; */
     font-size: 16px;
     text-align: center;
