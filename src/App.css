@@ -121,7 +121,7 @@
 
 #tab-general {
     /*padding-left: 0;*/
-    background-color: white;
+    /*background-color: white;*/
     color: #4a4a4a;
     font-weight: bold;
     border-right: 2px solid #cacaca;
@@ -165,7 +165,7 @@
 }
 
 .action-bar {
-    background-color: #F8F8F8;
+    /*background-color: #F8F8F8;*/
     border-top: 0.5px solid #e7e7e7;
     border-bottom: 0.5px solid #e7e7e7;
     height: initial;
@@ -179,7 +179,7 @@
 }
 
 .chatMessage :hover {
-    background-color: #f0f2f5;
+    /*background-color: #f0f2f5;*/
 }
 
 .chatMessage:hover .messageActions {
@@ -189,7 +189,7 @@
 
 .chatMessage .messageActions {
     position: absolute;
-    background-color: white;
+    /*background-color: white;*/
     border: 1px solid #d1d1d1;
     border-radius: 2px;
     padding-left: 5px;
@@ -232,7 +232,7 @@
     right: -10px;
     bottom: 0;
     position: absolute;
-    background-color: #DFE2E8;
+    /*background-color: #DFE2E8;*/
     width: 10px;
     z-index: 100;
     cursor: ew-resize;
@@ -438,7 +438,7 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    background-color: #FAFAFA;
+    /*background-color: #FAFAFA;*/
     /*position: fixed;*/
     /*bottom: 0;*/
     /*right: 0;*/
@@ -529,7 +529,7 @@ div.availabilityOptionsOpen span.availabilityOption {
 }
 
 .embeddedChatFrame {
-    background-color: #FAFAFA;
+    /*background-color: #FAFAFA;*/
     bottom: 0;
     width: 100%;
     height: 100%;
@@ -585,7 +585,7 @@ div.availabilityOptionsOpen span.availabilityOption {
 .chatMessageContainer {
     flex-direction: column-reverse;
     padding: 5px;
-    background-color: #fafafa;
+    /*background-color: #fafafa;*/
 }
 
 .bottomChatHeaderItems {
@@ -717,7 +717,7 @@ td.ant-table-cell.program-table-programItem {
 }
 
 .social-sidebar-divider .ant-divider-inner-text {
-    color: black;
+    /*color: black;*/
 }
 
 .sidebar-section-separator {
@@ -849,7 +849,7 @@ span.ant-divider-inner-text {
 }
 
 .multiChatWindow {
-    background-color: white;
+    /*background-color: white;*/
     /*   border: 2px solid #1890FF; */
     /* BCP: Changed (I think this looks right) */
     border: 2px solid #d6e4ff;
@@ -864,13 +864,13 @@ span.ant-divider-inner-text {
     background-color: #d6e4ff;
     text-shadow: none;
     border: none;
-    color: black;
+    /*color: black;*/
 }
 
 .multiChatWindowHeader button.ant-btn-primary:hover {
     background-color: #597ef7;
     border: none;
-    color: black;
+    /*color: black;*/
 }
 
 .multiChatWindowHeader {
@@ -909,7 +909,7 @@ span.ant-divider-inner-text {
 }
 
 .multiChatWindowChatArea {
-    background-color: #FAFAFA;
+    /*background-color: #FAFAFA;*/
     /*width: 100%;*/
     /*height: 100%;*/
     flex-grow: 4;
@@ -1130,7 +1130,7 @@ span.ant-divider-inner-text {
 }
 
 .programTime {
-    background-color: #efefef;
+    /*background-color: #efefef;*/
     text-align: center;
 }
 
@@ -1199,7 +1199,7 @@ span.ant-divider-inner-text {
 }
 
 .userDisplay .userName {
-    color: black;
+    /*color: black;*/
 }
 
 .bottomChatClose button {

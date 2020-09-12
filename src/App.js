@@ -55,6 +55,7 @@ import ActiveUsersList from "./components/SocialTab/ActiveUsersList";
 import EmojiPickerPopover from "./components/Chat/EmojiPickerPopover";
 
 
+
 Parse.initialize(process.env.REACT_APP_PARSE_APP_ID, process.env.REACT_APP_PARSE_JS_KEY);
 Parse.serverURL = process.env.REACT_APP_PARSE_DATABASE_URL;
 
@@ -75,6 +76,7 @@ class App extends Component {
             chatHeight: this.chatSize,
             dirty: false,
             isShowOtherPanes: false,
+            theme: 'light'
         }
     }
 
@@ -141,7 +143,10 @@ class App extends Component {
             if (!logo)
                 className = "missing-logo";
         }
-        return <Header><div className={className}>{logo}</div><LinkMenu /></Header>
+        return <Header>
+            <div className={className}>{logo}</div>
+            <LinkMenu isChanged={this.switchTheme.bind(this)}/>
+        </Header>
 
     }
 
@@ -227,6 +232,11 @@ class App extends Component {
     setLobbyWidth(w) {
         this.setState({ lobbyWidth: w });
     }
+
+    switchTheme(theme) {
+        this.setState(theme);
+    }
+
     render() {
         if (this.state.showingLanding) {
             return <GenericLanding />
@@ -254,7 +264,7 @@ class App extends Component {
 
         return (
             <div className="App">
-                <EmojiPickerPopover />
+                <EmojiPickerPopover theme={this.state.theme} />
                 <div>
                     <Layout className="site-layout">
                         <div id="top-content">
