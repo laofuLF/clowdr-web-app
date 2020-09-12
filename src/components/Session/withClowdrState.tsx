@@ -191,9 +191,7 @@ const withClowdrState = (Component: React.Component<Props, State>) => {
                 validConferences: [],
             };
         }
-
-
-
+        
         async updateMyPresence(presence: UserPresence) {
             assert(this.state.userProfile, "User profile is null");
             this.presences[this.state.userProfile.id] = presence;
