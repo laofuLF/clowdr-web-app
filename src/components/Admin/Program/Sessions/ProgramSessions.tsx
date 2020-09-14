@@ -280,7 +280,6 @@ class ProgramSessions extends React.Component<ProgramSessionsProps, ProgramSessi
                         if (newItems.length > 0)
                             data.items = newItems.map((i: Parse.Object) => { return { clazz: "ProgramItem", id: i.id } })
 
-                        console.log(data);
                         Parse.Cloud.run("update-obj", data)
                             .then(() => {
                                 this.setState({ alert: "save success" });
@@ -367,7 +366,7 @@ class ProgramSessions extends React.Component<ProgramSessionsProps, ProgramSessi
                             return <ul>{
                                 curEvents.map((event: Parse.Object) => (
                                     <li key={event.id}>
-                                        <span>{event.get('programItem').get('title')} {timezone(event.get("startTime")).tz(timezone.tz.guess()).format("HH:mm z")}</span>
+                                        <span>{event.get('programItem').get('title')}</span>
                                     </li>
                                 ))
                             }</ul>
