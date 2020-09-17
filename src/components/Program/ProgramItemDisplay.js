@@ -93,7 +93,8 @@ class ProgramItemDisplay extends React.Component {
             let now = Date.now();
 
             if (session.get("room")) { // && session.get("room").get("src1") === "YouTube") {
-                let when = "now"
+                let when = "now";
+                var timeE = session.get("endTime") ? session.get("endTime") : new Date();
                 if (timeE >= now)
                     roomInfo = <div><b>Presentation room: </b><Button type="primary" onClick={() => {
                         this.props.history.push("/live/" + when + "/" + session.get("room").get("name"))
