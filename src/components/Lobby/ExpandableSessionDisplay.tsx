@@ -79,7 +79,7 @@ class ExpandableSessionDisplay extends React.Component<ExpandableSessionDisplayP
             })
         }
         else if (this.props.session.get("items")) {
-            items = this.props.session.get('items').map((item: ProgramItem) => {
+            items = this.props.session.get('items').filter((item: ProgramItem) => item).map((item: ProgramItem) => {
                 return <div key={item.id}>
                     <ProgramItemDisplay id={item.id} auth={this.props.auth} showBreakoutRoom={true} />
                 </div>
