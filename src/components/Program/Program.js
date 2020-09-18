@@ -80,6 +80,8 @@ class Program extends React.Component {
                         for (let programItem of session.get("items")) {
                             if (this.state.filterByStar && !this.state.starredItems.find(item => item.id === programItem.id))
                                 continue;
+                            if (!session || !programItem)
+                                continue;
                             row.key = session.id + "-" + programItem.id;
                             row.programItem = programItem.id;
                             row.confKey = programItem.get("confKey");
