@@ -30,8 +30,6 @@ import {
 import SubMenu from "antd/es/menu/SubMenu";
 import { withRouter } from "react-router";
 import Toggle from '../theme/Toggle';
-import lightVars from "../theme/light.json";
-import darkVars from "../theme/dark.json";
 
 
 class LinkMenu extends React.Component {
@@ -40,24 +38,7 @@ class LinkMenu extends React.Component {
         super(props);
         this.state = {
             ProgramTracks: [],
-            theme: window.localStorage.getItem("theme") === "0" ? "light" : window.localStorage.getItem("theme")
         }
-        this.switchTheme();
-    }
-
-    themeToggle() {
-        this.setState({
-            theme: this.state.theme === 'light' ? 'dark' : 'light'
-        }, this.switchTheme);
-    }
-
-    switchTheme() {
-        window.localStorage.setItem("theme", this.state.theme);
-        window.less.modifyVars(this.state.theme === "light" ? lightVars : darkVars).then(() => {
-            this.props.isChanged({theme: this.state.theme});
-        }).catch(() => {
-            console.log('theme changed error')
-        })
     }
 
     componentDidMount() {
@@ -156,7 +137,8 @@ class LinkMenu extends React.Component {
         return <Menu theme={"dark"} mode={"horizontal"} selectedKeys={[this.props.location.pathname]} >
             <Menu.Item key='/' icon={<HomeOutlined />}><NavLink to="/">Home</NavLink></Menu.Item>
             {userTools}
-            <Toggle theme={this.state.theme} toggleTheme={this.themeToggle.bind(this)}/>
+            {/*change theme from parent component*/}
+            <Toggle theme={this.props.theme} toggleTheme={this.props.changeTheme.bind(this)}/>
         </Menu>;
     }
 }

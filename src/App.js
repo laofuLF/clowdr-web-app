@@ -53,6 +53,8 @@ import SplitPane from 'react-split-pane/lib/SplitPane';
 import Pane from 'react-split-pane/lib/Pane'
 import ActiveUsersList from "./components/SocialTab/ActiveUsersList";
 import EmojiPickerPopover from "./components/Chat/EmojiPickerPopover";
+import lightVars from "./theme/light.json";
+import darkVars from "./theme/dark.json";
 
 
 
@@ -76,8 +78,24 @@ class App extends Component {
             chatHeight: this.chatSize,
             dirty: false,
             isShowOtherPanes: false,
-            theme: 'light'
+            theme: window.localStorage.getItem("theme") ?? "light"
         }
+        this.switchTheme();
+    }
+
+    themeToggle() {
+        this.setState({
+            theme: this.state.theme === 'light' ? 'dark' : 'light'
+        }, this.switchTheme);
+    }
+
+    switchTheme() {
+        window.localStorage.setItem("theme", this.state.theme);
+        // reload theme
+        window.less.modifyVars(this.state.theme === "dark" ? darkVars : lightVars).then(() => {
+        }).catch(() => {
+            console.log('theme changed error')
+        })
     }
 
     dirty() {
@@ -145,9 +163,8 @@ class App extends Component {
         }
         return <Header>
             <div className={className}>{logo}</div>
-            <LinkMenu isChanged={this.switchTheme.bind(this)}/>
+            <LinkMenu theme={this.state.theme} changeTheme={this.themeToggle.bind(this)}/>
         </Header>
-
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -231,10 +248,6 @@ class App extends Component {
     }
     setLobbyWidth(w) {
         this.setState({ lobbyWidth: w });
-    }
-
-    switchTheme(theme) {
-        this.setState(theme);
     }
 
     render() {
